@@ -1,0 +1,46 @@
+{% load static i18n %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Food Delivery{% endblock %}</title>
+  {# Bootstrap is stored locally in static/vendor so the demo works without internet #}
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+</head>
+<body>
+  <nav class="navbar navbar-expand navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'customer:menu' %}">Food Delivery</a>
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="{% url 'customer:menu' %}">{% trans "Menu" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'customer:cart' %}">{% trans "Cart" %}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'staff:orders' %}">{% trans "Staff" %}</a></li>
+      </ul>
+      {# Language switcher #}
+      <form action="{% url 'set_language' %}" method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% get_available_languages as LANGUAGES %}
+        {% for code, name in LANGUAGES %}
+          <button type="submit" name="language" value="{{ code }}"
+                  class="btn btn-sm {% if code == LANGUAGE_CODE %}btn-light{% else %}btn-outline-light{% endif %}">
+            {{ code|upper }}
+          </button>
+        {% endfor %}
+      </form>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

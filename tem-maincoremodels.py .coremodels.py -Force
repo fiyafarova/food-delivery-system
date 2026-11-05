@@ -1,0 +1,186 @@
+warning: in the working copy of '.\food-delivery-system-main\core\models.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git "a/.\\core\\models.py" "b/.\\food-delivery-system-main\\core\\models.py"[m
+[1mindex 11bbb34..c32e594 100644[m
+[1m--- "a/.\\core\\models.py"[m
+[1m+++ "b/.\\food-delivery-system-main\\core\\models.py"[m
+[36m@@ -1,10 +1,172 @@[m
+[31m-"""Data models: Customer, Food_Item, Food_Order, Order_Item.[m
+ [m
+[31m-Owner: backend teammate. Keep the rules from Task 9:[m
+[31m-- foreign keys use on_delete=models.PROTECT (ON DELETE RESTRICT)[m
+[31m-- UNIQUE(order, food_item) on the order line[m
+[31m-- order status: Placed / Preparing / Delivered / Cancelled[m
+[31m-- db_table names match the Task 9 table plan[m
+[31m-"""[m
+[32m+[m[32mfrom django.db import models[m
+ [m
+[31m-from django.db import models  # noqa: F401[m
+[32m+[m
+[32m+[m[32mclass Customer(models.Model):[m
+[32m+[m[32m    customer_id = models.AutoField(primary_key=True)[m
+[32m+[m[32m    name = models.CharField(max_length=100)[m
+[32m+[m[32m    phone = models.CharField(max_length=20, unique=True)[m
+[32m+[m[32m    address = models.CharField(max_length=255)[m
+[32m+[m
+[32m+[m[32m    class Meta:[m
+[32m+[m[32m        db_table = "Customer"[m
+[32m+[m
+[32m+[m[32m    def __str__(self):[m
+[32m+[m[32m        return self.name[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Food_Item(models.Model):[m
+[32m+[m[32m    food_item_id = models.AutoField(primary_key=True)[m
+[32m+[m[32m    name = models.CharField(max_length=100)[m
+[32m+[m[32m    price = models.DecimalField(max_digits=10, decimal_places=2)[m
+[32m+[m[32m    category = models.CharField(max_length=50)[m
+[32m+[m[32m    is_available = models.BooleanField(default=True)[m
+[32m+[m
+[32m+[m[32m    class Meta:[m
+[32m+[m[32m        db_table = "Food_Item"[m
+[32m+[m
+[32m+[m[32m    def __str__(self):[m
+[32m+[m[32m        return self.name[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Food_Order(models.Model):[m
+[32m+[m[32m    STATUS_CHOICES = [[m
+[32m+[m[32m        ("Placed", "Placed"),[m
+[32m+[m[32m        ("Preparing", "Preparing"),[m
+[32m+[m[32m        ("Delivered", "Delivered"),[m
+[32m+[m[32m        ("Cancelled", "Cancelled"),[m
+[32m+[m[32m    ][m
+[32m+[m
+[32m+[m[32m    order_id = models.AutoField(primary_key=True)[m
+[32m+[m[32m    customer = models.ForeignKey([m
+[32m+[m[32m        Customer,[m
+[32m+[m[32m        on_delete=models.PROTECT,[m
+[32m+[m[32m        db_column="customer_id",[m
+[32m+[m[32m        related_name="orders"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    order_date = models.DateTimeField(auto_now_add=True)[m
+[32m+[m[32m    status = models.CharField([m
+[32m+[m[32m        max_length=20,[m
+[32m+[m[32m        choices=STATUS_CHOICES,[m
+[32m+[m[32m        default="Placed"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    total_amount = models.DecimalField([m
+[32m+[m[32m        max_digits=10,[m
+[32m+[m[32m        decimal_places=2,[m
+[32m+[m[32m        default=0[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    class Meta:[m
+[32m+[m[32m        db_table = "Food_Order"[m
+[32m+[m
+[32m+[m[32m    def __str__(self):[m
+[32m+[m[32m        return f"Order #{self.order_id}"[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Order_Item(models.Model):[m
+[32m+[m[32m    order_item_id = models.AutoField(primary_key=True)[m
+[32m+[m[32m    order = models.ForeignKey([m
+[32m+[m[32m        Food_Order,[m
+[32m+[m[32m        on_delete=models.PROTECT,[m
+[32m+[m[32m        db_column="order_id",[m
+[32m+[m[32m        related_name="items"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    food_item = models.ForeignKey([m
+[32m+[m[32m        Food_Item,[m
+[32m+[m[32m        on_delete=models.PROTECT,[m
+[32m+[m[32m        db_column="food_item_id",[m
+[32m+[m[32m        related_name="order_items"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    quantity = models.PositiveIntegerField()[m
+[32m+[m[32m    unit_price = models.DecimalField(max_digits=10, decimal_places=2)[m
+[32m+[m
+[32m+[m[32m    class Meta:[m
+[32m+[m[32m        db_table = "Order_Item"[m
+[32m+[m[32m        constraints = [[m
+[32m+[m[32m            models.UniqueConstraint([m
+[32m+[m[32m                fields=["order", "food_item"],[m
+[32m+[m[32m                name="unique_food_item_per_order"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        ][m
+[32m+[m
+[32m+[m[32m    def __str__(self):[m
+[32m+[m[32m        return f"{self.food_item.name} x {self.quantity}"[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Payment(models.Model):[m
+[32m+[m[32m    PAYMENT_METHODS = [[m
+[32m+[m[32m        ("Cash", "Cash"),[m
+[32m+[m[32m        ("Card", "Card"),[m
+[32m+[m[32m    ][m
+[32m+[m
+[32m+[m[32m    PAYMENT_STATUSES = [[m
+[32m+[m[32m        ("Pending", "Pending"),[m
+[32m+[m[32m        ("Paid", "Paid"),[m
+[32m+[m[32m        ("Failed", "Failed"),[m
+[32m+[m[32m        ("Refunded", "Refunded"),[m
+[32m+[m[32m    ][m
+[32m+[m
+[32m+[m[32m    payment_id = models.AutoField(primary_key=True)[m
+[32m+[m[32m    order = models.OneToOneField([m
+[32m+[m[32m        Food_Order,[m
+[32m+[m[32m        on_delete=models.PROTECT,[m
+[32m+[m[32m        db_column="order_id",[m
+[32m+[m[32m        related_name="payment"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    amount = models.DecimalField(max_digits=10, decimal_places=2)[m
+[32m+[m[32m    payment_method = models.CharField([m
+[32m+[m[32m        max_length=20,[m
+[32m+[m[32m        choices=PAYMENT_METHODS,[m
+[32m+[m[32m        default="Cash"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    payment_status = models.CharField([m
+[32m+[m[32m        max_length=20,[m
+[32m+[m[32m        choices=PAYMENT_STATUSES,[m
+[32m+[m[32m        default="Pending"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    payment_date = models.DateTimeField(auto_now_add=True)[m
+[32m+[m
+[32m+[m[32m    class Meta:[m
+[32m+[m[32m        db_table = "Payment"[m
+[32m+[m
+[32m+[m[32m    def __str__(self):[m
+[32m+[m[32m        return f"Payment #{self.payment_id}"[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Delivery(models.Model):[m
+[32m+[m[32m    DELIVERY_STATUSES = [[m
+[32m+[m[32m        ("Pending", "Pending"),[m
+[32m+[m[32m        ("Assigned", "Assigned"),[m
+[32m+[m[32m        ("Picked Up", "Picked Up"),[m
+[32m+[m[32m        ("Delivered", "Delivered"),[m
+[32m+[m[32m    ][m
+[32m+[m
+[32m+[m[32m    delivery_id = models.AutoField(primary_key=True)[m
+[32m+[m[32m    order = models.OneToOneField([m
+[32m+[m[32m        Food_Order,[m
+[32m+[m[32m        on_delete=models.PROTECT,[m
+[32m+[m[32m        db_column="order_id",[m
+[32m+[m[32m        related_name="delivery"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    delivery_address = models.CharField(max_length=255)[m
+[32m+[m[32m    courier_name = models.CharField([m
+[32m+[m[32m        max_length=100,[m
+[32m+[m[32m        blank=True,[m
+[32m+[m[32m        null=True[m
+[32m+[m[32m    )[m
+[32m+[m[32m    delivery_status = models.CharField([m
+[32m+[m[32m        max_length=20,[m
+[32m+[m[32m        choices=DELIVERY_STATUSES,[m
+[32m+[m[32m        default="Pending"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    created_at = models.DateTimeField(auto_now_add=True)[m
+[32m+[m[32m    delivered_at = models.DateTimeField([m
+[32m+[m[32m        null=True,[m
+[32m+[m[32m        blank=True[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    class Meta:[m
+[32m+[m[32m        db_table = "Delivery"[m
+[32m+[m
+[32m+[m[32m    def __str__(self):[m
+[32m+[m[32m        return f"Delivery #{self.delivery_id}"[m

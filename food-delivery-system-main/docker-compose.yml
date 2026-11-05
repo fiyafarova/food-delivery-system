@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: fooddelivery-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fooddelivery}
+      POSTGRES_USER: ${POSTGRES_USER:-fooddelivery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fooddelivery}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

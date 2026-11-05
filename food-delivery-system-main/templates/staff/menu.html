@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Menu availability" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% trans "Menu availability" %}</h1>
+    <a class="btn btn-outline-dark" href="{% url 'staff:orders' %}">{% trans "Back to orders" %}</a>
+</div>
+
+<table class="table align-middle">
+    <thead>
+    <tr>
+        <th>{% trans "Dish" %}</th>
+        <th>{% trans "Category" %}</th>
+        <th>{% trans "Price" %}</th>
+        <th>{% trans "Available" %}</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.category }}</td>
+        <td>{{ item.price }} ₸</td>
+        <td>
+            {% if item.is_available %}
+            <span class="badge text-bg-success">{% trans "Yes" %}</span>
+            {% else %}
+            <span class="badge text-bg-secondary">{% trans "No" %}</span>
+            {% endif %}
+        </td>
+        <td>
+            <form method="post" action="{% url 'staff:toggle_availability' item.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-dark">
+                    {% if item.is_available %}{% trans "Make unavailable" %}{% else %}{% trans "Make available" %}{% endif %}
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

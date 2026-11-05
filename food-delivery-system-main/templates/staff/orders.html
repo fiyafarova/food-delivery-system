@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Orders" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% trans "Orders" %}</h1>
+    <a class="btn btn-outline-dark" href="{% url 'staff:menu' %}">{% trans "Menu availability" %}</a>
+</div>
+
+<div class="mb-3 d-flex flex-wrap gap-2">
+    <a class="btn btn-sm {% if not current_status %}btn-dark{% else %}btn-outline-dark{% endif %}"
+       href="{% url 'staff:orders' %}">{% trans "All" %}</a>
+    {% for status in statuses %}
+    <a class="btn btn-sm {% if current_status == status %}btn-dark{% else %}btn-outline-dark{% endif %}"
+       href="{% url 'staff:orders' %}?status={{ status }}">{{ status }}</a>
+    {% endfor %}
+</div>
+
+{% if orders %}
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>{% trans "Customer" %}</th>
+        <th>{% trans "Total" %}</th>
+        <th>{% trans "Status" %}</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for order in orders %}
+    <tr>
+        <td><a href="{% url 'staff:order_detail' order.id %}">{{ order.id }}</a></td>
+        <td>{{ order.customer }}</td>
+        <td>{{ order.total }} ₸</td>
+        <td><span class="badge text-bg-{{ order.badge }}">{{ order.status }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">{% trans "No orders with this status." %}</p>
+{% endif %}
+{% endblock %}
