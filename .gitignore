@@ -1,8 +1,12 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .venv/
 venv/
+ENV/
+env/
 
 # Local secrets and settings
 .env
@@ -11,6 +15,7 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
 
 # Django
 staticfiles/
