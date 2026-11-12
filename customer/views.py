@@ -4,17 +4,11 @@ Until the models are ready, views pass test data to the templates.
 """
 
 from django.shortcuts import render
-
-# Temporary test data (replace with queries to core.models later)
-TEST_MENU = [
-    {"id": 1, "name": "Pizza", "price": 2500, "category": "Main", "is_available": True},
-    {"id": 2, "name": "Burger", "price": 1800, "category": "Main", "is_available": True},
-    {"id": 3, "name": "Cola", "price": 600, "category": "Drinks", "is_available": False},
-]
-
+from core.models import FoodItem
 
 def menu(request):
-    return render(request, "customer/menu.html", {"items": TEST_MENU})
+    items = FoodItem.objects.order_by("category", "name")
+    return render(request, "customer/menu.html", {"items": items})
 
 
 def cart(request):
