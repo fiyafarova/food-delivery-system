@@ -1,0 +1,314 @@
+msgid ""
+msgstr "Language: ru\nContent-Type: text/plain; charset=UTF-8\nPlural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid "Menu"
+msgstr "Меню"
+
+msgid "Staff"
+msgstr "Сотрудники"
+
+msgid "Favorites"
+msgstr "Избранное"
+
+msgid "Cart"
+msgstr "Корзина"
+
+msgid "Profile"
+msgstr "Профиль"
+
+msgid "Home"
+msgstr "Главная"
+
+msgid "My account"
+msgstr "Мой аккаунт"
+
+msgid "Log out"
+msgstr "Выйти"
+
+msgid "Personal details"
+msgstr "Личные данные"
+
+msgid "Delivery address"
+msgstr "Адрес доставки"
+
+msgid "Edit profile"
+msgstr "Редактировать профиль"
+
+msgid "First name"
+msgstr "Имя"
+
+msgid "Last name"
+msgstr "Фамилия"
+
+msgid "Phone"
+msgstr "Телефон"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Not specified"
+msgstr "Не указано"
+
+msgid "City"
+msgstr "Город"
+
+msgid "Address"
+msgstr "Адрес"
+
+msgid "View delivery address"
+msgstr "Перейти к адресу"
+
+msgid "Favorite restaurants"
+msgstr "Избранные рестораны"
+
+msgid "Restaurants you have saved."
+msgstr "Рестораны, которые вы сохранили."
+
+msgid "Open favorites"
+msgstr "Открыть избранное"
+
+msgid "Edit address"
+msgstr "Изменить адрес"
+
+msgid "Street, building, apartment"
+msgstr "Улица, дом, квартира"
+
+msgid "Changes saved"
+msgstr "Изменения сохранены"
+
+msgid "Enter a valid phone number, for example +7 701 000 00 00"
+msgstr "Введите корректный номер телефона, например +7 701 000 00 00"
+
+msgid "Back to restaurants"
+msgstr "К ресторанам"
+
+msgid "Continue shopping"
+msgstr "Продолжить покупки"
+
+msgid "Restaurant"
+msgstr "Ресторан"
+
+msgid "Clear cart"
+msgstr "Очистить корзину"
+
+msgid "per serving"
+msgstr "за порцию"
+
+msgid "Unavailable"
+msgstr "Недоступно"
+
+msgid "Decrease quantity"
+msgstr "Уменьшить"
+
+msgid "Increase quantity"
+msgstr "Увеличить"
+
+msgid "Remove"
+msgstr "Удалить"
+
+msgid "Summary"
+msgstr "Итого"
+
+msgid "Subtotal"
+msgstr "Сумма блюд"
+
+msgid "Delivery"
+msgstr "Доставка"
+
+msgid "Calculated at checkout"
+msgstr "Рассчитывается при оформлении"
+
+msgid "Total to pay"
+msgstr "Итого к оплате"
+
+msgid "Your cart contains unavailable items. Remove them to continue."
+msgstr "В корзине есть недоступные блюда. Удалите их, чтобы продолжить."
+
+msgid "Go to checkout"
+msgstr "К оформлению"
+
+msgid "Checkout is not available yet."
+msgstr "Оформление заказа пока не подключено."
+
+msgid "Your cart is empty"
+msgstr "Корзина пуста"
+
+msgid "Add dishes from a restaurant to start your order. You can change it at any time."
+msgstr "Добавьте блюда из ресторана, и заказ появится здесь. Его можно изменить в любой момент."
+
+msgid "No favorite dishes yet"
+msgstr "В избранном пока нет блюд"
+
+msgid "Tap the heart next to a dish in the menu to save it here."
+msgstr "Нажмите на сердечко рядом с блюдом в меню, и оно появится здесь."
+
+msgid "BITEBOX · ALMATY"
+msgstr "BITEBOX · АЛМАТЫ"
+
+msgid "Your favorite dishes."
+msgstr "Любимые блюда."
+
+msgid "From restaurants nearby."
+msgstr "Из ресторанов рядом."
+
+msgid "Choose a restaurant and find something delicious."
+msgstr "Выберите ресторан и найдите что-нибудь вкусное."
+
+msgid "Choose a restaurant"
+msgstr "Выбрать ресторан"
+
+msgid "BiteBox sample promotions"
+msgstr "Демонстрационные акции BiteBox"
+
+msgid "Sample promotion"
+msgstr "Демо-акция"
+
+msgid "Pizza night"
+msgstr "Вечер пиццы"
+
+msgid "15% off with code PIZZA15"
+msgstr "Скидка 15% по коду PIZZA15"
+
+msgid "Burger and fries"
+msgstr "Бургер и картофель фри"
+
+msgid "Combo at a special price"
+msgstr "Комбо по специальной цене"
+
+msgid "Sushi rolls for two"
+msgstr "Роллы на двоих"
+
+msgid "10% off with code ROLLS10"
+msgstr "Скидка 10% по коду ROLLS10"
+
+msgid "Previous promotion"
+msgstr "Предыдущая акция"
+
+msgid "Next promotion"
+msgstr "Следующая акция"
+
+msgid "What are you craving today?"
+msgstr "Что хочется сегодня?"
+
+msgid "Restaurant categories"
+msgstr "Категории ресторанов"
+
+msgid "All"
+msgstr "Все"
+
+msgid "Pizza"
+msgstr "Пицца"
+
+msgid "Burgers"
+msgstr "Бургеры"
+
+msgid "Sushi"
+msgstr "Суши"
+
+msgid "Restaurants nearby"
+msgstr "Рестораны рядом"
+
+msgid "Burgers · American cuisine"
+msgstr "Бургеры · Американская кухня"
+
+msgid "Pizza · Italian cuisine"
+msgstr "Пицца · Итальянская кухня"
+
+msgid "Sushi · Japanese cuisine"
+msgstr "Суши · Японская кухня"
+
+msgid "Rating: 4.8 · 20–30 min"
+msgstr "Рейтинг: 4,8 · 20–30 минут"
+
+msgid "Rating: 4.7 · 25–35 min"
+msgstr "Рейтинг: 4,7 · 25–35 минут"
+
+msgid "Rating: 4.9 · 30–40 min"
+msgstr "Рейтинг: 4,9 · 30–40 минут"
+
+msgid "Delivery: 400 ₸"
+msgstr "Доставка: 400 ₸"
+
+msgid "Delivery: 500 ₸"
+msgstr "Доставка: 500 ₸"
+
+msgid "Delivery: 600 ₸"
+msgstr "Доставка: 600 ₸"
+
+msgid "View menu"
+msgstr "Посмотреть меню"
+
+msgid "Cheeseburger"
+msgstr "Чизбургер"
+
+msgid "French fries"
+msgstr "Картофель фри"
+
+msgid "Lemonade"
+msgstr "Лимонад"
+
+msgid "Margherita"
+msgstr "Маргарита"
+
+msgid "Pepperoni"
+msgstr "Пепперони"
+
+msgid "Philadelphia rolls"
+msgstr "Филадельфия"
+
+msgid "Set for two"
+msgstr "Сет на двоих"
+
+msgid "Sample restaurants and prices. Checkout is not available yet."
+msgstr "Тестовые рестораны и цены. Оформление заказа пока не подключено."
+
+msgid "Add to favorites"
+msgstr "Добавить в избранное"
+
+msgid "Remove from favorites"
+msgstr "Убрать из избранного"
+
+msgid "Invalid dish"
+msgstr "Некорректное блюдо"
+
+msgid "Dish not found"
+msgstr "Блюдо не найдено"
+
+msgid "This dish is currently unavailable"
+msgstr "Это блюдо сейчас недоступно"
+
+msgid "Invalid quantity"
+msgstr "Некорректное количество"
+
+msgid "This dish is not in the cart"
+msgstr "Блюда нет в корзине"
+
+msgid "Could not update the cart"
+msgstr "Не удалось обновить корзину"
+
+msgid "Could not reach the server. Please try again."
+msgstr "Нет связи с сервером. Попробуйте ещё раз."
+
+msgid "Could not add the dish"
+msgstr "Не удалось добавить блюдо"
+
+msgid "Added ✓"
+msgstr "Добавлено ✓"
+
+msgid "Your cart contains dishes from “{current}”. Replace them with dishes from “{next}”?"
+msgstr "В корзине блюда из «{current}». Заменить корзину блюдами из «{next}»?"
+
+msgid "Restaurant:"
+msgstr "Ресторан:"
+
+msgid "Phone:"
+msgstr "Телефон:"
+
+msgid "City:"
+msgstr "Город:"
+
+msgid "Address:"
+msgstr "Адрес:"
