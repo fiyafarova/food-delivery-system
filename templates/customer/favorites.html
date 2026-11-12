@@ -1,8 +1,45 @@
 {% extends "base.html" %}
+{% load static i18n %}
 
-{% block title %}Избранное — BiteBox{% endblock %}
+{% block title %}{% trans "Favorites" %} — BiteBox{% endblock %}
 
 {% block content %}
-  <h1 class="h3">Избранное</h1>
-  <p class="text-muted">ToDo: Dilnaz</p>
+<link rel="stylesheet" href="{% static 'css/favorites.css' %}">
+{% url 'customer:menu' as menu_url %}
+
+<div class="bb-fav-page">
+    <div class="container py-4 py-md-5">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <h1 class="h2 fw-bold mb-0">{% trans "Favorites" %}</h1>
+            <a class="bb-link" href="{{ menu_url }}">← {% trans "Back to restaurants" %}</a>
+        </div>
+
+        <div id="fav-list" class="d-none"></div>
+
+        <div id="fav-empty" class="text-center py-5">
+            <div class="bb-empty-icon mb-3" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+            <h2 class="h4 fw-bold">{% trans "No favorite dishes yet" %}</h2>
+            <p class="bb-muted mb-3">{% trans "Tap the heart next to a dish in the menu to save it here." %}</p>
+            <a class="btn btn-bb" href="{{ menu_url }}">{% trans "Back to restaurants" %}</a>
+        </div>
+
+    </div>
+</div>
+
+<script src="{% static 'js/favorites.js' %}"
+        data-add='{% trans "Add to favorites" %}'
+        data-remove-heart='{% trans "Remove from favorites" %}'
+        data-remove='{% trans "Remove" %}'
+        data-dish-1='{% trans "Cheeseburger" %}'
+        data-dish-2='{% trans "French fries" %}'
+        data-dish-3='{% trans "Lemonade" %}'
+        data-dish-4='{% trans "Margherita" %}'
+        data-dish-5='{% trans "Pepperoni" %}'
+        data-dish-6='{% trans "Philadelphia rolls" %}'
+        data-dish-7='{% trans "Set for two" %}'></script>
 {% endblock %}
