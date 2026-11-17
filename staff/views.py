@@ -2,18 +2,21 @@
 
 Owner: Sofiya.
 
-Until the models are ready, data comes from staff/test_data.py and is kept in
-memory (it resets when the server restarts).
+Orders now come from the database (core.models.FoodOrder / OrderItem).
+The menu availability page still uses the in-memory test data from
+staff/test_data.py (it resets when the server restarts).
 TODO: staff login and role check (Group "Restaurant staff").
 """
 
 from django.contrib import messages
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from .test_data import make_menu, make_orders
+from core.models import FoodOrder
+
+from .test_data import make_menu
 
 STATUSES = ["Placed", "Preparing", "Delivered", "Cancelled"]
 
@@ -34,37 +37,44 @@ BADGES = {
     "Cancelled": "danger",
 }
 
-ORDERS = make_orders()
 MENU = make_menu()
 
 
 def reset_test_data():
-    """Restore the original test data (used by the tests)."""
-    ORDERS[:] = make_orders()
+    """Restore the original menu test data (used by the tests)."""
     MENU[:] = make_menu()
 
 
 def find_order(order_id):
-    for order in ORDERS:
-        if order["id"] == order_id:
-            return order
-    raise Http404("Order not found")
+    """Return the order from the database or raise 404."""
+    return get_object_or_404(
+        FoodOrder.objects.select_related("customer").prefetch_related("items__food_item"),
+        pk=order_id,
+    )
 
 
 def order_total(order):
     """The total is calculated from the order lines: sum of quantity * unit_price."""
-    return sum(line["quantity"] * line["unit_price"] for line in order["items"])
+    return sum(line.quantity * line.unit_price for line in order.items.all())
 
 
 def orders(request):
     status = request.GET.get("status", "")
-    shown = []
-    for order in ORDERS:
-        if status in STATUSES and order["status"] != status:
-            continue
-        shown.append({**order, "total": order_total(order), "badge": BADGES[order["status"]]})
+    queryset = FoodOrder.objects.select_related("customer").prefetch_related("items")
+    if status in STATUSES:
+        queryset = queryset.filter(status=status)
+
     # newest first (a bigger id means a newer order)
-    shown.sort(key=lambda o: o["id"], reverse=True)
+    shown = [
+        {
+            "id": order.id,
+            "customer": order.customer.name,
+            "total": order_total(order),
+            "status": order.status,
+            "badge": BADGES.get(order.status, "secondary"),
+        }
+        for order in queryset.order_by("-id")
+    ]
     return render(request, "staff/orders.html", {
         "orders": shown,
         "statuses": STATUSES,
@@ -74,13 +84,28 @@ def orders(request):
 
 def order_detail(request, order_id):
     order = find_order(order_id)
-    lines = [{**line, "line_total": line["quantity"] * line["unit_price"]} for line in order["items"]]
+    lines = [
+        {
+            "name": line.food_item.name,
+            "unit_price": line.unit_price,
+            "quantity": line.quantity,
+            "line_total": line.quantity * line.unit_price,
+        }
+        for line in order.items.all()
+    ]
+    order_data = {
+        "id": order.id,
+        "status": order.status,
+        "customer": order.customer.name,
+        "phone": order.customer.phone,
+        "address": order.customer.address,
+    }
     return render(request, "staff/order_detail.html", {
-        "order": order,
+        "order": order_data,
         "lines": lines,
         "total": order_total(order),
-        "badge": BADGES[order["status"]],
-        "next_statuses": TRANSITIONS[order["status"]],
+        "badge": BADGES.get(order.status, "secondary"),
+        "next_statuses": TRANSITIONS.get(order.status, []),
     })
 
 
@@ -91,10 +116,11 @@ def change_status(request, order_id):
 
     if new_status not in STATUSES:
         messages.warning(request, _("Unknown status."))
-    elif new_status not in TRANSITIONS[order["status"]]:
+    elif new_status not in TRANSITIONS.get(order.status, []):
         messages.warning(request, _("This status change is not allowed."))
     else:
-        order["status"] = new_status
+        order.status = new_status
+        order.save(update_fields=["status"])
         messages.success(request, _("Order status changed."))
     return redirect("staff:order_detail", order_id=order_id)
 
