@@ -11,6 +11,7 @@ so that every order is from one restaurant (the cart rule):
     Urban Burger  order 3: Cheeseburger + French Fries + Cola     = 3300
 
 Restaurants belong to owner_demo; staff_demo (if it exists) works in all of them.
+customer_demo / customer2_demo (if they exist) get the orders of Aigerim / Dias.
 Safe to run again: existing rows are reused, nothing is duplicated.
 """
 
@@ -93,6 +94,10 @@ class Command(BaseCommand):
         for name, phone, address in CUSTOMERS:
             customers[phone], _ = Customer.objects.get_or_create(
                 phone=phone, defaults={"name": name, "address": address})
+
+        from staff.management.commands.create_demo_users import link_demo_customer
+        for demo_user in User.objects.filter(username__in=["customer_demo", "customer2_demo"]):
+            link_demo_customer(demo_user)
 
         new_orders = 0
         for phone, restaurant_name, status, date, lines in ORDERS:

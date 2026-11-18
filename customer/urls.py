@@ -1,7 +1,7 @@
+from django.contrib.auth import views as auth_views
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import cart_views
 from . import cart_views, views
 
 app_name = "customer"
@@ -18,4 +18,8 @@ urlpatterns = [
     path("order/<int:order_id>/", views.order_status, name="order_status"),
     path("favorites/", views.favorites, name="favorites"),
     path("profile/", views.profile, name="profile"),
+    path("login/", auth_views.LoginView.as_view(
+        template_name="customer/login.html", redirect_authenticated_user=True,
+    ), name="login"),
+    path("logout/", auth_views.LogoutView.as_view(next_page="customer:menu"), name="logout"),  # POST only
 ]

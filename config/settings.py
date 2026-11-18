@@ -109,6 +109,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Custom user model from the accounts app (must be set before the first migrate)
 AUTH_USER_MODEL = "accounts.User"
 
+# Customer login (pages with @login_required). Staff pages use their own /staff/login/.
+LOGIN_URL = "customer:login"
+LOGIN_REDIRECT_URL = "customer:profile"
+
 # REST API (accounts + restaurants apps)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

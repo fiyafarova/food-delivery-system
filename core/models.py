@@ -18,6 +18,7 @@ database/food_delivery_database.sql, so Darya's SQL (trigger, views, roles)
 works on the same tables.
 """
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -27,6 +28,15 @@ from django.utils import timezone
 
 class Customer(models.Model):
     customer_id = models.AutoField(primary_key=True)
+    # The site account of this customer: a customer sees only orders of their own Customer.
+    # SET_NULL: if the account is deleted, the order history stays.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="customer",
+    )
     name = models.CharField(max_length=100)
     phone = models.CharField(max_length=20, unique=True)
     address = models.CharField(max_length=255)

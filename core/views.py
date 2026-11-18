@@ -1,5 +1,6 @@
 import json
 from decimal import Decimal
+from functools import wraps
 
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -9,7 +10,43 @@ from django.db import transaction
 from customer import cart as shared_cart
 from restaurants.models import FoodItem
 
-from .models import Customer, FoodOrder, OrderItem
+from .access import CustomerDataError, can_manage_order, can_view_order, customer_of, get_or_create_customer
+from .models import Customer, Delivery, FoodOrder, OrderItem, Payment
+
+
+# =========================
+# ACCESS CHECKS
+# =========================
+# Not logged in -> 401. Someone else's order -> 404 (we do not tell that it exists).
+# "view": the customer who placed the order, or staff of its restaurant.
+# "manage": staff / owner / admin of the order's restaurant only.
+
+def _order_from_kwargs(kwargs):
+    if "order_id" in kwargs:
+        return FoodOrder.objects.filter(pk=kwargs["order_id"]).select_related("customer").first()
+    if "payment_id" in kwargs:
+        payment = Payment.objects.filter(pk=kwargs["payment_id"]).select_related("order__customer").first()
+        return payment.order if payment else None
+    if "delivery_id" in kwargs:
+        delivery = Delivery.objects.filter(pk=kwargs["delivery_id"]).select_related("order__customer").first()
+        return delivery.order if delivery else None
+    return None
+
+
+def order_access(kind):
+    check = can_view_order if kind == "view" else can_manage_order
+
+    def decorator(view):
+        @wraps(view)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return JsonResponse({"error": "Log in first."}, status=401)
+            order = _order_from_kwargs(kwargs)
+            if order is None or not check(request.user, order):
+                return JsonResponse({"error": "Not found."}, status=404)
+            return view(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 # =========================
@@ -119,10 +156,12 @@ def remove_from_cart(request):
 
 @require_POST
 def create_order(request):
+    """Order the cart. The customer is the logged-in account (customer_id from the body is ignored)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Log in to place an order."}, status=401)
     try:
-        data = json.loads(request.body)
-        customer_id = int(data.get("customer_id"))
-    except (ValueError, TypeError, json.JSONDecodeError):
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid order data."}, status=400)
 
     lines = cart_lines(request)
@@ -135,7 +174,11 @@ def create_order(request):
     if len(restaurants) != 1:  # the cart never allows this, but check anyway
         return JsonResponse({"error": "All dishes must be from one restaurant."}, status=400)
 
-    customer = get_object_or_404(Customer, customer_id=customer_id)
+    try:
+        customer = get_or_create_customer(
+            request.user, data.get("name", ""), data.get("phone", ""), data.get("address", ""))
+    except CustomerDataError as error:
+        return JsonResponse({"error": str(error)}, status=400)
 
     with transaction.atomic():
         order = FoodOrder.objects.create(
@@ -167,6 +210,7 @@ def create_order(request):
 # =========================
 
 @require_GET
+@order_access("view")
 def order_details(request, order_id):
     order = get_object_or_404(FoodOrder.objects.select_related("restaurant"), order_id=order_id)
 
@@ -197,6 +241,7 @@ def order_details(request, order_id):
 # =========================
 
 @require_POST
+@order_access("manage")
 def update_order_status(request, order_id):
     try:
         data = json.loads(request.body)
@@ -239,11 +284,28 @@ def update_order_status(request, order_id):
 
 @require_GET
 def order_history(request, customer_id):
-    customer = get_object_or_404(
-        Customer,
-        customer_id=customer_id
-    )
+    """History of one customer: only for that customer or an admin."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Log in first."}, status=401)
+    customer = get_object_or_404(Customer, customer_id=customer_id)
+    is_admin = request.user.is_superuser or request.user.role == request.user.Role.ADMIN
+    if customer.user_id != request.user.pk and not is_admin:
+        return JsonResponse({"error": "Not found."}, status=404)
+    return JsonResponse(history_payload(customer))
 
+
+@require_GET
+def my_orders(request):
+    """GET /core/orders/mine/ - order history of the logged-in customer."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Log in first."}, status=401)
+    customer = customer_of(request.user)
+    if customer is None:
+        return JsonResponse({"customer_id": None, "orders": []})
+    return JsonResponse(history_payload(customer))
+
+
+def history_payload(customer):
     orders = FoodOrder.objects.filter(
         customer=customer
     ).order_by("-order_date")
@@ -260,12 +322,11 @@ def order_history(request, customer_id):
             "items_count": order.items.count(),
         })
 
-    return JsonResponse({
+    return {
         "customer_id": customer.customer_id,
         "orders": result,
-    })
+    }
 from django.utils import timezone
-from .models import Payment, Delivery
 
 
 # =========================
@@ -273,6 +334,7 @@ from .models import Payment, Delivery
 # =========================
 
 @require_POST
+@order_access("view")
 def create_payment(request, order_id):
     try:
         data = json.loads(request.body)
@@ -320,6 +382,7 @@ def create_payment(request, order_id):
 
 
 @require_POST
+@order_access("manage")
 def update_payment_status(request, payment_id):
     try:
         data = json.loads(request.body)
@@ -360,6 +423,7 @@ def update_payment_status(request, payment_id):
 
 
 @require_GET
+@order_access("view")
 def payment_details(request, order_id):
     payment = get_object_or_404(
         Payment,
@@ -381,6 +445,7 @@ def payment_details(request, order_id):
 # =========================
 
 @require_POST
+@order_access("manage")
 def create_delivery(request, order_id):
     try:
         data = json.loads(request.body)
@@ -426,6 +491,7 @@ def create_delivery(request, order_id):
 
 
 @require_POST
+@order_access("manage")
 def update_delivery_status(request, delivery_id):
     try:
         data = json.loads(request.body)
@@ -472,6 +538,7 @@ def update_delivery_status(request, delivery_id):
 
 
 @require_GET
+@order_access("view")
 def delivery_details(request, order_id):
     delivery = get_object_or_404(
         Delivery,
