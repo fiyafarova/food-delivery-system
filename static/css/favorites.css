@@ -1,0 +1,134 @@
+.bb-fav-page {
+    background: var(--bb-bg);
+    color: var(--bb-text);
+    min-height: 60vh;
+}
+
+.bb-fav-page .bb-card {
+    background: #fff;
+    border: 1px solid var(--bb-border);
+    border-radius: 20px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 8px 24px rgba(var(--bb-accent-rgb), 0.06);
+}
+
+.bb-fav-page .bb-muted {
+    color: var(--bb-muted);
+}
+
+.bb-fav-page .bb-link {
+    color: var(--bb-orange-dark);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.bb-fav-page .bb-link:hover {
+    text-decoration: underline;
+}
+
+.bb-fav-page .bb-group-title {
+    border-left: 4px solid var(--bb-orange);
+    padding-left: 0.75rem;
+    font-weight: 800;
+}
+
+.bb-fav-page .bb-price {
+    color: var(--bb-orange-dark);
+    font-weight: 700;
+}
+
+.bb-fav-page .btn-bb {
+    background: var(--bb-orange);
+    border: 1px solid var(--bb-orange);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 0.7rem 1.4rem;
+}
+
+.bb-fav-page .btn-bb:hover,
+.bb-fav-page .btn-bb:focus {
+    background: var(--bb-orange-dark);
+    border-color: var(--bb-orange-dark);
+    color: #fff;
+}
+
+.bb-fav-page .btn-bb-outline {
+    background: #fff;
+    border: 1px solid var(--bb-border);
+    color: var(--bb-text);
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.9rem;
+}
+
+.bb-fav-page .btn-bb-outline:hover {
+    border-color: var(--bb-orange);
+    color: var(--bb-orange-dark);
+}
+
+.bb-heart {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 50%;
+    border: 1px solid var(--bb-border);
+    background: #fff;
+    color: var(--bb-orange);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.bb-heart:hover {
+    background: var(--bb-peach);
+}
+
+.bb-heart:active {
+    transform: scale(0.92);
+}
+
+.bb-heart:focus-visible {
+    outline: 3px solid rgba(var(--bb-accent-rgb), 0.35);
+    outline-offset: 2px;
+}
+
+.bb-heart svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    transition: fill 0.15s ease;
+}
+
+.bb-heart.is-active svg {
+    fill: var(--bb-orange);
+}
+
+.bb-fav-page .bb-empty-icon {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: var(--bb-peach);
+    color: var(--bb-orange);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bb-fav-page .bb-empty-icon svg {
+    width: 48px;
+    height: 48px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.bb-menu-dish { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-block: 0.35rem; }

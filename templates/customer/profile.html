@@ -1,8 +1,287 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Профиль — BiteBox{% endblock %}
+{% block title %}{% trans "Profile" %} — BiteBox{% endblock %}
 
 {% block content %}
-  <h1 class="h3">Профиль</h1>
-  <p class="text-muted">ToDo: Dilnaz</p>
+{% trans "Not specified" as not_specified %}
+<style>
+    .bb-account {
+        background: var(--bb-bg);
+        color: var(--bb-text);
+        min-height: 60vh;
+    }
+    .bb-account .bb-card {
+        background: #fff;
+        border: 1px solid var(--bb-border);
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 8px 24px rgba(var(--bb-accent-rgb), 0.06);
+    }
+    .bb-account .bb-card-sm {
+        padding: 1.25rem;
+        border-radius: 16px;
+    }
+    .bb-account .bb-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        border-bottom: 1px solid var(--bb-border);
+        scrollbar-width: none;
+    }
+    .bb-account .bb-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .bb-account .bb-tabs .nav-link {
+        color: var(--bb-muted);
+        font-weight: 600;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: 0.75rem 1rem;
+    }
+    .bb-account .bb-tabs .nav-link:hover {
+        color: var(--bb-text);
+    }
+    .bb-account .bb-tabs .nav-link.active {
+        color: var(--bb-text);
+        border-bottom-color: var(--bb-orange);
+    }
+    .bb-account .bb-avatar {
+        width: 88px;
+        height: 88px;
+        flex: 0 0 88px;
+        border-radius: 50%;
+        background: var(--bb-peach);
+        color: var(--bb-orange-dark);
+        font-size: 1.9rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bb-account .bb-label {
+        color: var(--bb-muted);
+        font-size: 0.85rem;
+    }
+    .bb-account .btn-bb {
+        background: var(--bb-orange);
+        border: 1px solid var(--bb-orange);
+        color: #fff;
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 0.6rem 1.4rem;
+    }
+    .bb-account .btn-bb:hover,
+    .bb-account .btn-bb:focus {
+        background: var(--bb-orange-dark);
+        border-color: var(--bb-orange-dark);
+        color: #fff;
+    }
+    .bb-account .btn-bb-outline {
+        background: #fff;
+        border: 1px solid var(--bb-border);
+        color: var(--bb-text);
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 0.6rem 1.4rem;
+    }
+    .bb-account .btn-bb-outline:hover {
+        border-color: var(--bb-orange);
+        color: var(--bb-orange-dark);
+    }
+    .bb-account .bb-link {
+        color: var(--bb-orange-dark);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .bb-account .bb-link:hover {
+        text-decoration: underline;
+    }
+    .bb-account .form-control {
+        border-radius: 12px;
+        border: 1px solid var(--bb-border);
+        background: var(--bb-bg);
+        padding: 0.65rem 0.9rem;
+    }
+    .bb-account .form-control:focus {
+        border-color: var(--bb-orange);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bb-accent-rgb), 0.18);
+        background: #fff;
+    }
+    .bb-account .form-control:disabled {
+        background: #f6f1ec;
+    }
+    @media (max-width: 575.98px) {
+        .bb-account .bb-card {
+            padding: 1.25rem;
+            border-radius: 16px;
+        }
+        .bb-account .bb-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="bb-account">
+    <div class="container py-4 py-md-5">
+
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+            <h1 class="h2 fw-bold mb-0">{% trans "My account" %}</h1>
+            {% if logout_url %}
+            <form method="post" action="{{ logout_url }}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-bb-outline btn-sm">{% trans "Log out" %}</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-success mb-3" role="alert">{{ message }}</div>
+        {% endfor %}
+
+        <ul class="nav bb-tabs flex-nowrap mb-4">
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'personal' %}active{% endif %}" href="{{ profile_url }}?tab=personal">{% trans "Personal details" %}</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'address' %}active{% endif %}" href="{{ profile_url }}?tab=address">{% trans "Delivery address" %}</a>
+            </li>
+            {% for item in extra_nav %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ item.url }}">{{ item.label }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% if tab == "personal" %}
+
+        <div class="bb-card mb-4">
+            {% if editing %}
+            <h2 class="h5 fw-bold mb-3">{% trans "Edit profile" %}</h2>
+            <form method="post" action="{{ profile_url }}?tab=personal" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="personal">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label for="id_first_name" class="form-label fw-semibold">{% trans "First name" %}</label>
+                        <input type="text" id="id_first_name" name="first_name"
+                               class="form-control{% if personal_form.first_name.errors %} is-invalid{% endif %}"
+                               value="{{ personal_form.first_name.value|default_if_none:'' }}" autocomplete="given-name">
+                        {% for error in personal_form.first_name.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="id_last_name" class="form-label fw-semibold">{% trans "Last name" %}</label>
+                        <input type="text" id="id_last_name" name="last_name"
+                               class="form-control{% if personal_form.last_name.errors %} is-invalid{% endif %}"
+                               value="{{ personal_form.last_name.value|default_if_none:'' }}" autocomplete="family-name">
+                        {% for error in personal_form.last_name.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="id_phone" class="form-label fw-semibold">{% trans "Phone" %}</label>
+                        <input type="tel" id="id_phone" name="phone"
+                               class="form-control{% if personal_form.phone.errors %} is-invalid{% endif %}"
+                               value="{{ personal_form.phone.value|default_if_none:'' }}" autocomplete="tel"
+                               placeholder="+7 701 000 00 00">
+                        {% for error in personal_form.phone.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="id_email" class="form-label fw-semibold">Email</label>
+                        <input type="email" id="id_email" class="form-control" value="{{ request.user.email }}" disabled>
+                    </div>
+                </div>
+                <div class="bb-actions d-flex flex-column flex-sm-row gap-2 mt-4">
+                    <button type="submit" class="btn btn-bb">{% trans "Save" %}</button>
+                    <a href="{{ profile_url }}?tab=personal" class="btn btn-bb-outline">{% trans "Cancel" %}</a>
+                </div>
+            </form>
+            {% else %}
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3 gap-md-4">
+                    <div class="bb-avatar" aria-hidden="true">{{ initials }}</div>
+                    <div>
+                        <div class="h4 fw-bold mb-1">{{ request.user.get_full_name|default:request.user.get_username }}</div>
+                        <div class="mb-1"><span class="bb-label">Email:</span> {{ request.user.email|default:not_specified }}</div>
+                        <div><span class="bb-label">{% trans "Phone:" %}</span> {{ profile.phone|default:not_specified }}</div>
+                    </div>
+                </div>
+                <a href="{{ profile_url }}?tab=personal&edit=1" class="btn btn-bb">{% trans "Edit profile" %}</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <div class="bb-card bb-card-sm h-100">
+                    <div class="fw-bold mb-2">{% trans "Delivery address" %}</div>
+                    <div class="mb-1"><span class="bb-label">{% trans "City:" %}</span> {{ profile.city|default:not_specified }}</div>
+                    <div class="mb-3"><span class="bb-label">{% trans "Address:" %}</span> {{ profile.address|default:not_specified }}</div>
+                    <a class="bb-link" href="{{ profile_url }}?tab=address">{% trans "View delivery address" %}</a>
+                </div>
+            </div>
+            {% if favorites_url %}
+            <div class="col-12 col-md-6">
+                <div class="bb-card bb-card-sm h-100">
+                    <div class="fw-bold mb-2">{% trans "Favorite restaurants" %}</div>
+                    <p class="text-muted mb-3">{% trans "Restaurants you have saved." %}</p>
+                    <a class="bb-link" href="{{ favorites_url }}">{% trans "Open favorites" %}</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% else %}
+
+        <div class="bb-card">
+            {% if editing %}
+            <h2 class="h5 fw-bold mb-3">{% trans "Edit address" %}</h2>
+            <form method="post" action="{{ profile_url }}?tab=address" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="address">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label for="id_city" class="form-label fw-semibold">{% trans "City" %}</label>
+                        <input type="text" id="id_city" name="city"
+                               class="form-control{% if address_form.city.errors %} is-invalid{% endif %}"
+                               value="{{ address_form.city.value|default_if_none:'' }}" autocomplete="address-level2">
+                        {% for error in address_form.city.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-12 col-md-8">
+                        <label for="id_address" class="form-label fw-semibold">{% trans "Address" %}</label>
+                        <input type="text" id="id_address" name="address"
+                               class="form-control{% if address_form.address.errors %} is-invalid{% endif %}"
+                               value="{{ address_form.address.value|default_if_none:'' }}" autocomplete="street-address"
+                               placeholder="{% trans "Street, building, apartment" %}">
+                        {% for error in address_form.address.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="bb-actions d-flex flex-column flex-sm-row gap-2 mt-4">
+                    <button type="submit" class="btn btn-bb">{% trans "Save" %}</button>
+                    <a href="{{ profile_url }}?tab=address" class="btn btn-bb-outline">{% trans "Cancel" %}</a>
+                </div>
+            </form>
+            {% else %}
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <div class="h5 fw-bold mb-3">{% trans "Delivery address" %}</div>
+                    <div class="mb-1"><span class="bb-label">{% trans "City:" %}</span> {{ profile.city|default:not_specified }}</div>
+                    <div><span class="bb-label">{% trans "Address:" %}</span> {{ profile.address|default:not_specified }}</div>
+                </div>
+                <a href="{{ profile_url }}?tab=address&edit=1" class="btn btn-bb">{% trans "Edit address" %}</a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

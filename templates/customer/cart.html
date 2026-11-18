@@ -1,7 +1,235 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Cart" %}{% endblock %}
+{% load static i18n %}
+
+{% block title %}{% trans "Cart" %} — BiteBox{% endblock %}
+
 {% block content %}
-<h1 class="h3 mb-3">{% trans "Cart" %}</h1>
-<p class="text-muted">ToDo: Dilnaz</p>
+<style>
+    .bb-cart {
+        background: var(--bb-bg);
+        color: var(--bb-text);
+        min-height: 60vh;
+    }
+    .bb-cart .bb-card {
+        background: #fff;
+        border: 1px solid var(--bb-border);
+        border-radius: 20px;
+        padding: 1.25rem;
+        box-shadow: 0 8px 24px rgba(var(--bb-accent-rgb), 0.06);
+    }
+    .bb-cart .bb-photo {
+        width: 84px;
+        height: 84px;
+        flex: 0 0 84px;
+        border-radius: 14px;
+        object-fit: cover;
+        background: var(--bb-peach);
+    }
+    .bb-cart .bb-photo-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--bb-orange-dark);
+        font-weight: 800;
+    }
+    .bb-cart .bb-muted {
+        color: var(--bb-muted);
+    }
+    .bb-cart .btn-bb {
+        background: var(--bb-orange);
+        border: 1px solid var(--bb-orange);
+        color: #fff;
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 0.7rem 1.4rem;
+    }
+    .bb-cart .btn-bb:hover,
+    .bb-cart .btn-bb:focus {
+        background: var(--bb-orange-dark);
+        border-color: var(--bb-orange-dark);
+        color: #fff;
+    }
+    .bb-cart .btn-bb.disabled,
+    .bb-cart .btn-bb:disabled {
+        background: var(--bb-border);
+        border-color: var(--bb-border);
+        color: #fff;
+    }
+    .bb-cart .bb-qty {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--bb-border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .bb-cart .bb-qty button {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        background: #fff;
+        color: var(--bb-orange-dark);
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    .bb-cart .bb-qty button:hover:not(:disabled) {
+        background: var(--bb-peach);
+    }
+    .bb-cart .bb-qty button:disabled {
+        color: #c9c9c9;
+    }
+    .bb-cart .bb-qty span {
+        min-width: 36px;
+        text-align: center;
+        font-weight: 700;
+    }
+    .bb-cart .bb-link {
+        color: var(--bb-orange-dark);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .bb-cart .bb-link:hover {
+        text-decoration: underline;
+    }
+    .bb-cart .bb-remove {
+        border: 0;
+        background: none;
+        color: var(--bb-muted);
+        font-size: 0.9rem;
+        padding: 0;
+    }
+    .bb-cart .bb-remove:hover {
+        color: #c0392b;
+    }
+    .bb-cart .bb-summary {
+        position: sticky;
+        top: 1rem;
+    }
+    .bb-cart .bb-bag {
+        width: 160px;
+        height: 160px;
+    }
+    @media (max-width: 575.98px) {
+        .bb-cart .bb-photo {
+            width: 64px;
+            height: 64px;
+            flex-basis: 64px;
+        }
+    }
+</style>
+
+<div class="bb-cart" id="cart-root"
+     data-update-url="{% url 'customer:cart_update' %}"
+     data-remove-url="{% url 'customer:cart_remove' %}"
+     data-clear-url="{% url 'customer:cart_clear' %}">
+    <div class="container py-4 py-md-5">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <h1 class="h2 fw-bold mb-0">{% trans "Cart" %}</h1>
+            <a class="bb-link" href="{{ menu_url }}">← {% trans "Continue shopping" %}</a>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-danger" role="alert">{{ message }}</div>
+        {% endfor %}
+        <div class="alert alert-danger d-none" id="cart-alert" role="alert"></div>
+
+        <div id="cart-filled" class="{% if cart.empty %}d-none{% endif %}">
+            <div class="row g-4">
+                <div class="col-12 col-lg-8">
+                    <div class="bb-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="bb-muted">{% trans "Restaurant:" %} <strong class="text-dark" data-restaurant>{{ cart.restaurant_name }}</strong></div>
+                            <button type="button" class="bb-remove" data-action="clear">{% trans "Clear cart" %}</button>
+                        </div>
+
+                        {% for line in cart.lines %}
+                        <div class="d-flex gap-3 py-3 border-top" data-line data-dish-id="{{ line.id }}">
+                            {% if line.image_url %}
+                            <img class="bb-photo" src="{{ line.image_url }}" alt="{{ line.name }}">
+                            {% else %}
+                            <div class="bb-photo bb-photo-empty" aria-hidden="true">BB</div>
+                            {% endif %}
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <div>
+                                        <div class="fw-bold">{{ line.name }}</div>
+                                        <div class="bb-muted small">{{ line.price_display }} {% trans "per serving" %}</div>
+                                        {% if not line.available %}
+                                        <span class="badge text-bg-danger mt-1">{% trans "Unavailable" %}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="fw-bold text-nowrap" data-line-total>{{ line.total_display }}</div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div class="bb-qty">
+                                        <button type="button" data-action="dec" aria-label="{% trans "Decrease quantity" %}"{% if not line.available %} disabled{% endif %}>−</button>
+                                        <span data-qty>{{ line.quantity }}</span>
+                                        <button type="button" data-action="inc" aria-label="{% trans "Increase quantity" %}"{% if not line.available %} disabled{% endif %}>+</button>
+                                    </div>
+                                    <button type="button" class="bb-remove" data-action="remove">{% trans "Remove" %}</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-4">
+                    <div class="bb-card bb-summary">
+                        <h2 class="h5 fw-bold mb-3">{% trans "Summary" %}</h2>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="bb-muted">{% trans "Subtotal" %}</span>
+                            <span data-subtotal>{{ cart.subtotal_display }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="bb-muted">{% trans "Delivery" %}</span>
+                            <span class="text-end">{% trans "Calculated at checkout" %}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                            <span>{% trans "Total to pay" %}</span>
+                            <span data-total>{{ cart.subtotal_display }}</span>
+                        </div>
+
+                        <div class="alert alert-warning small {% if not cart.has_unavailable %}d-none{% endif %}" id="cart-unavailable">
+                            {% trans "Your cart contains unavailable items. Remove them to continue." %}
+                        </div>
+
+                        {% if checkout_url %}
+                        <a id="checkout-btn" href="{{ checkout_url }}"
+                           class="btn btn-bb w-100{% if not cart.can_checkout %} disabled{% endif %}"
+                           {% if not cart.can_checkout %}aria-disabled="true" tabindex="-1"{% endif %}>{% trans "Go to checkout" %}</a>
+                        {% else %}
+                        <button type="button" class="btn btn-bb w-100" disabled>{% trans "Go to checkout" %}</button>
+                        <div class="bb-muted small mt-2">{% trans "Checkout is not available yet." %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cart-empty" class="text-center py-5 {% if not cart.empty %}d-none{% endif %}">
+            <svg class="bb-bag mb-3" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M52 62c0-22 12-38 28-38s28 16 28 38" fill="none" stroke="var(--bb-orange-dark)" stroke-width="7" stroke-linecap="round"/>
+                <path d="M34 56h92l8 84a6 6 0 0 1-6 7H32a6 6 0 0 1-6-7l8-84z" fill="var(--bb-orange)"/>
+                <path d="M34 56h92l3 30H31l3-30z" fill="#c96e36"/>
+                <rect x="46" y="96" width="68" height="30" rx="15" fill="var(--bb-peach)"/>
+                <text x="80" y="117" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="800" fill="var(--bb-orange-dark)">BiteBox</text>
+            </svg>
+            <h2 class="fw-bold">{% trans "Your cart is empty" %}</h2>
+            <p class="bb-muted mx-auto" style="max-width: 420px;">{% trans "Add dishes from a restaurant to start your order. You can change it at any time." %}</p>
+            <a class="btn btn-bb" href="{{ menu_url }}">{% trans "Back to restaurants" %}</a>
+        </div>
+
+    </div>
+</div>
+
+<script src="{% static 'js/cart.js' %}"
+        data-update-error='{% trans "Could not update the cart" %}'
+        data-network-error='{% trans "Could not reach the server. Please try again." %}'
+        data-add-error='{% trans "Could not add the dish" %}'
+        data-added='{% trans "Added ✓" %}'
+        data-replace-cart='{% trans "Your cart contains dishes from “{current}”. Replace them with dishes from “{next}”?" %}'></script>
 {% endblock %}

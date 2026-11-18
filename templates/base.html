@@ -4,17 +4,61 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Food Delivery{% endblock %}</title>
+  <title>{% block title %}BiteBox{% endblock %}</title>
   {# Bootstrap is stored locally in static/vendor so the demo works without internet #}
   <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <style>
+  :root {
+    --bb-orange: #a6532e;
+    --bb-orange-dark: #814a32;
+    --bb-peach: #f3e1d4;
+    --bb-bg: #fbf6f1;
+    --bb-text: #302620;
+    --bb-muted: #695b52;
+    --bb-border: #e7d4c7;
+    --bb-accent-rgb: 166, 83, 46;
+  }
+
+  body {
+    background-color: var(--bb-bg);
+  }
+
+  .bitebox-navbar {
+    background-color: var(--bb-orange);
+    --bs-navbar-padding-y: 0.85rem;
+  }
+
+  .bitebox-navbar .bitebox-wordmark {
+    color: #fff9f3;
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.04em;
+    position: relative;
+    top: -2px;
+  }
+
+  .bitebox-navbar .bitebox-account-links .nav-link {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .bitebox-navbar .nav-link {
+    color: #fff;
+  }
+
+  .bitebox-navbar .nav-link:hover {
+    text-decoration: underline;
+  }
+</style>
 </head>
 <body>
-<nav class="navbar navbar-expand navbar-dark bg-dark">
+<nav class="navbar navbar-expand navbar-dark bitebox-navbar">
   <div class="container flex-wrap gap-2">
 
-    <a class="navbar-brand"
-      href="{% url 'customer:menu' %}"
-      style="font-size: 28px; font-weight: 500;">
+    <a class="navbar-brand bitebox-wordmark"
+      href="{% url 'customer:menu' %}">
       BiteBox
     </a>
 
@@ -32,20 +76,20 @@
       </li>
     </ul>
 
-     <div class="d-flex align-items-center gap-3">
+     <div class="d-flex align-items-center gap-3 bitebox-account-links">
       <a href="{% url 'customer:favorites' %}"
       class="nav-link text-white">
-      Избранное
+      {% trans "Favorites" %}
     </a>
     
     <a href="{% url 'customer:cart' %}"
      class="nav-link text-white">
-    Корзина
+    {% trans "Cart" %}
     </a>
     
     <a href="{% url 'customer:profile' %}"
     class="nav-link text-white">
-    Профиль
+    {% trans "Profile" %}
     </a> 
     </div>
 
