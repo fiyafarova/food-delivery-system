@@ -11,6 +11,9 @@ from django.utils.translation import gettext
 from accounts.models import CustomerProfile, DeliveryAddress
 from restaurants.models import Restaurant
 
+from core.access import customer_of
+from core.models import FoodOrder
+
 from .cart import build_cart
 from .forms import AddressForm, PersonalForm
 
@@ -61,8 +64,33 @@ def checkout(request):
     return render(request, "customer/checkout.html", {"cart": cart, "draft": draft})
 
 
+# Steps shown to the customer on the order page
+ORDER_STEPS = ["Placed", "Preparing", "Delivered"]
+
+
+@login_required
 def order_status(request, order_id):
-    return render(request, "customer/order_status.html", {"order_id": order_id})
+    """A customer sees only their own order (someone else's order -> 404)."""
+    customer = customer_of(request.user)
+    order = get_object_or_404(
+        FoodOrder.objects.select_related("restaurant").prefetch_related("items__food_item"),
+        pk=order_id, customer=customer,
+    ) if customer else None
+    if order is None:
+        raise Http404
+    lines = [
+        {"name": line.food_item.name, "quantity": line.quantity,
+         "unit_price": line.unit_price, "total": line.quantity * line.unit_price}
+        for line in order.items.all()
+    ]
+    done = ORDER_STEPS.index(order.status) if order.status in ORDER_STEPS else -1
+    steps = [{"name": step, "done": i <= done} for i, step in enumerate(ORDER_STEPS)]
+    return render(request, "customer/order_status.html", {
+        "order": order,
+        "lines": lines,
+        "steps": steps,
+        "cancelled": order.status == FoodOrder.Status.CANCELLED,
+    })
 
 def favorites(request):
     return render(request, "customer/favorites.html")
@@ -129,5 +157,14 @@ def profile(request):
         "delivery_addresses": profile_obj.delivery_addresses.all() if tab == "address" else (),
         "initials": initials or user.get_username()[:2].upper(),
         "profile_url": profile_url,
-        "logout_url": None,
+        "logout_url": reverse("customer:logout"),
+        "orders": my_orders(user) if tab == "orders" else (),
     })
+
+
+def my_orders(user):
+    customer = customer_of(user)
+    if customer is None:
+        return []
+    return (FoodOrder.objects.filter(customer=customer)
+            .select_related("restaurant").order_by("-order_date"))

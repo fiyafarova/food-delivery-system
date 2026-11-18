@@ -261,8 +261,36 @@
             </div>
             <div>
                 <h2 class="h5 fw-bold mb-2">{% if profile_language == "ru" %}История заказов{% else %}Order history{% endif %}</h2>
-                <p class="text-muted mb-0">{% if profile_language == "ru" %}История появится здесь, когда заработает отправка заказов.{% else %}Order history will appear here once order submission is available.{% endif %}</p>
+                {% if not orders %}
+                <p class="text-muted mb-0">{% if profile_language == "ru" %}У вас пока нет заказов.{% else %}You have no orders yet.{% endif %}</p>
+                {% endif %}
             </div>
+            {% if orders %}
+            <div class="w-100 table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{% trans "Restaurant" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th class="text-end">{% trans "Total" %}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td><a href="{% url 'customer:order_status' order.order_id %}">{{ order.order_id }}</a></td>
+                        <td>{{ order.restaurant.name }}</td>
+                        <td>{{ order.order_date|date:"d.m.Y H:i" }}</td>
+                        <td>{% trans order.status %}</td>
+                        <td class="text-end">{{ order.total_amount }} ₸</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
         </section>
 
         {% else %}
