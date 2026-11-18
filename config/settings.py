@@ -7,6 +7,9 @@ so every team member can use their own local values.
 import os
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,7 +31,7 @@ INSTALLED_APPS = [
     # Project apps
     "accounts",     # custom User model + REST auth/profile API
     "restaurants",  # REST API: restaurants, categories, food items, search
-    "core",      # data models (Customer, Food_Item, Food_Order, Order_Item)
+    "core",      # data models: Customer, FoodItem, FoodOrder, OrderItem, Payment, Delivery
     "customer",  # client pages: menu, cart, checkout, order status
     "staff",     # restaurant staff pages: orders, order details, menu availability
 ]
@@ -64,7 +67,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# PostgreSQL (started with `docker compose up -d`)
+# PostgreSQL. Defaults match docker-compose.yml; put other values (e.g. Supabase) in .env.
+# Tables of the core app live in the schema "food_delivery" (same as database/*.sql).
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -73,6 +77,9 @@ DATABASES = {
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "fooddelivery"),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "OPTIONS": {
+            "options": "-c search_path=food_delivery,public"
+        },
     }
 }
 

@@ -3,7 +3,8 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
-from . import views
+from core.models import Customer, FoodItem, FoodOrder, OrderItem
+
 from .permissions import STAFF_GROUP
 
 PASSWORD = "test-pass-123"
@@ -17,18 +18,45 @@ def make_user(username, staff=False, **extra):
     return user
 
 
+def make_test_data():
+    """Same demo data as before, now saved in the database.
+
+    Orders: 101 Placed (2 pizzas + 1 burger = 6800), 102 Preparing, 103 Delivered, 104 Cancelled.
+    Dishes: 1 Pizza, 2 Burger, 3 Cola (not available).
+    """
+    pizza = FoodItem.objects.create(pk=1, name="Pizza", price=2500, category="Main")
+    burger = FoodItem.objects.create(pk=2, name="Burger", price=1800, category="Main")
+    cola = FoodItem.objects.create(pk=3, name="Cola", price=600, category="Drinks", is_available=False)
+    orders = [
+        (101, "Aigerim", "Placed", [(pizza, 2), (burger, 1)]),
+        (102, "Aidos", "Preparing", [(burger, 1)]),
+        (103, "Dana", "Delivered", [(pizza, 1)]),
+        (104, "Marat", "Cancelled", [(cola, 2)]),
+    ]
+    for number, (order_id, name, status, lines) in enumerate(orders, start=1):
+        customer = Customer.objects.create(name=name, phone=f"+7700000000{number}", address="Almaty")
+        order = FoodOrder.objects.create(pk=order_id, customer=customer, status=status)
+        for food, quantity in lines:
+            OrderItem.objects.create(order=order, food_item=food, quantity=quantity, unit_price=food.price)
+
+
+def status_of(order_id):
+    return FoodOrder.objects.get(pk=order_id).status
+
+
+def is_available(item_id):
+    return FoodItem.objects.get(pk=item_id).is_available
+
+
 class StaffTests(TestCase):
-    """Orders in test data: 101 Placed (total 6800), 102 Preparing, 103 Delivered, 104 Cancelled."""
+    """Staff pages work with orders and dishes from the database (see make_test_data)."""
 
     def setUp(self):
-        views.reset_test_data()  # every test starts from the same data
+        make_test_data()  # every test starts from the same data
         self.client.force_login(make_user("staff1", staff=True))
 
     def change(self, order_id, status):
         return self.client.post(reverse("staff:change_status", args=[order_id]), {"status": status})
-
-    def status_of(self, order_id):
-        return views.find_order(order_id)["status"]
 
     def test_orders_list_shows_all_orders_newest_first(self):
         response = self.client.get(reverse("staff:orders"))
@@ -52,21 +80,21 @@ class StaffTests(TestCase):
 
     def test_allowed_status_change_is_saved(self):
         self.change(101, "Preparing")
-        self.assertEqual(self.status_of(101), "Preparing")
+        self.assertEqual(status_of(101), "Preparing")
         response = self.client.get(reverse("staff:order_detail", args=[101]))
         self.assertEqual(response.context["order"]["status"], "Preparing")
 
     def test_skipping_a_status_is_rejected(self):
         self.change(101, "Delivered")  # Placed -> Delivered is not allowed
-        self.assertEqual(self.status_of(101), "Placed")
+        self.assertEqual(status_of(101), "Placed")
 
     def test_final_status_cannot_be_changed(self):
         self.change(103, "Cancelled")  # Delivered is final
-        self.assertEqual(self.status_of(103), "Delivered")
+        self.assertEqual(status_of(103), "Delivered")
 
     def test_unknown_status_is_rejected(self):
         self.change(101, "Flying")
-        self.assertEqual(self.status_of(101), "Placed")
+        self.assertEqual(status_of(101), "Placed")
 
     def test_status_change_requires_post(self):
         response = self.client.get(reverse("staff:change_status", args=[101]))
@@ -74,9 +102,9 @@ class StaffTests(TestCase):
 
     def test_toggle_availability_changes_the_dish(self):
         self.client.post(reverse("staff:toggle_availability", args=[3]))  # Cola was not available
-        self.assertTrue(views.MENU[2]["is_available"])
+        self.assertTrue(is_available(3))
         self.client.post(reverse("staff:toggle_availability", args=[3]))
-        self.assertFalse(views.MENU[2]["is_available"])
+        self.assertFalse(is_available(3))
 
     def test_toggle_unknown_dish_returns_404(self):
         response = self.client.post(reverse("staff:toggle_availability", args=[999]))
@@ -87,7 +115,7 @@ class StaffAccessTests(TestCase):
     """Only users in the group "Restaurant staff" may open the /staff/ pages."""
 
     def setUp(self):
-        views.reset_test_data()
+        make_test_data()
 
     def test_group_is_created_by_migration(self):
         self.assertTrue(Group.objects.filter(name=STAFF_GROUP).exists())
@@ -99,7 +127,7 @@ class StaffAccessTests(TestCase):
     def test_anonymous_user_cannot_change_status(self):
         response = self.client.post(reverse("staff:change_status", args=[101]), {"status": "Preparing"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(views.find_order(101)["status"], "Placed")
+        self.assertEqual(status_of(101), "Placed")
 
     def test_staff_user_sees_orders_list(self):
         make_user("staff1", staff=True)
@@ -119,10 +147,10 @@ class StaffAccessTests(TestCase):
         self.client.force_login(get_user_model().objects.get(username="customer1"))
         response = self.client.post(reverse("staff:change_status", args=[101]), {"status": "Preparing"})
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(views.find_order(101)["status"], "Placed")
+        self.assertEqual(status_of(101), "Placed")
         response = self.client.post(reverse("staff:toggle_availability", args=[3]))
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(views.MENU[2]["is_available"])
+        self.assertFalse(is_available(3))
 
     def test_owner_and_admin_roles_can_open_staff_pages(self):
         for username, role in [("owner1", "owner"), ("manager1", "admin")]:
