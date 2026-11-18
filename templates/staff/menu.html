@@ -31,7 +31,7 @@
             {% endif %}
         </td>
         <td>
-            <form method="post" action="{% url 'staff:toggle_availability' item.id %}">
+            <form method="post" action="{% url 'staff:toggle_availability' item.pk %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-outline-dark">
                     {% if item.is_available %}{% trans "Make unavailable" %}{% else %}{% trans "Make available" %}{% endif %}
