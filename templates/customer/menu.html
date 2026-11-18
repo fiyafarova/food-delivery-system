@@ -1,12 +1,14 @@
 {% extends "base.html" %}
+{% load static i18n %}
 
-{% block title %}Главная — BiteBox{% endblock %}
+{% block title %}{% trans "Home" %} — BiteBox{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/favorites.css' %}">
 
 <style>
   .home {
-    color: #303236;
+    color: var(--bb-text);
   }
 
   .banner {
@@ -22,7 +24,7 @@
   }
 
   .banner p {
-    color: #666;
+    color: var(--bb-muted);
     margin: 15px 0 25px;
   }
 
@@ -70,7 +72,7 @@
   }
 
   .restaurant-info p {
-    color: #666;
+    color: var(--bb-muted);
     font-size: 14px;
   }
 
@@ -95,51 +97,178 @@
       font-size: 29px;
     }
   }
+  .home {
+  --bitebox-orange: #bd4900;
+  --bitebox-orange-hover: #963900;
+  --bitebox-peach: #fff1e6;
+  --bitebox-border: #f0d4bf;
+}
+
+.home .banner,
+.home .restaurant-cover {
+  background: var(--bb-peach);
+}
+
+.home .restaurant,
+.home .category {
+  border-color: var(--bb-border);
+}
+
+.home .category {
+  background: var(--bb-bg);
+}
+
+.home .banner .btn-dark,
+.home .category.active {
+  background: var(--bb-orange);
+  border-color: var(--bb-orange);
+  color: white;
+}
+
+.home .banner .btn-dark:hover,
+.home .category.active:hover {
+  background: var(--bb-orange-dark);
+  border-color: var(--bb-orange-dark);
+}
+
+.home .restaurant-info summary {
+  color: var(--bb-orange);
+}
+
+  .banner-grid { display: grid; gap: 1.5rem; align-items: center; }
+  @media (min-width: 768px) {
+    .banner-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+  }
+
+  .banner-promos { min-width: 0; overflow: hidden; border-radius: 16px; }
+  .banner-promos .carousel-item {
+    position: relative;
+    aspect-ratio: 2 / 1;
+    min-height: 185px;
+    background-color: var(--bb-orange-dark);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .banner-promos .promo-pizza {
+    background-image: url("{% static 'images/promo-pizza.jpg' %}");
+  }
+  .banner-promos .promo-burger {
+    background-image: url("{% static 'images/promo-burger.jpeg' %}");
+  }
+  .banner-promos .promo-sushi {
+    background-image: url("{% static 'images/promo-sushi.jpg' %}");
+  }
+  .banner-promos .promo-copy {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.25rem 14% 1.25rem 3%;
+    color: #fff;
+    background: linear-gradient(transparent 25%, rgba(40, 21, 14, .92));
+  }
+  .banner-promos .promo-copy small { color: #ffe1ca; }
+  .banner-promos .carousel-control-prev,
+  .banner-promos .carousel-control-next {
+    width: 13%;
+    opacity: 1;
+  }
+  .banner-promos .promo-arrow {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: rgba(40, 21, 14, .8);
+    font-size: 1.2rem;
+  }
 </style>
 
 <div class="home">
 
-  <section class="banner">
-    <p>BITEBOX · АЛМАТЫ</p>
+  <section class="banner banner-grid">
+    <div>
+      <p>{% trans "BITEBOX · ALMATY" %}</p>
 
-    <h1>
-      Любимые блюда.<br>
-      Из ресторанов рядом.
-    </h1>
+      <h1>
+        {% trans "Your favorite dishes." %}<br>
+        {% trans "From restaurants nearby." %}
+      </h1>
 
-    <p>Выберите ресторан и найдите что-нибудь вкусное.</p>
+      <p>{% trans "Choose a restaurant and find something delicious." %}</p>
 
-    <a href="#restaurants" class="btn btn-dark">
-      Выбрать ресторан
-    </a>
+      <a href="#restaurants" class="btn btn-dark">
+        {% trans "Choose a restaurant" %}
+      </a>
+    </div>
+    <div>
+      <div id="bitebox-promos" class="carousel slide banner-promos" data-bs-ride="carousel" data-bs-interval="5000"
+           aria-label="{% trans "BiteBox sample promotions" %}">
+        <div class="carousel-inner">
+          <div class="carousel-item promo-pizza active">
+            <div class="promo-copy">
+              <small>{% trans "Sample promotion" %}</small>
+              <h2 class="h5 mb-1">{% trans "Pizza night" %}</h2>
+              <span>{% trans "15% off with code PIZZA15" %}</span>
+            </div>
+          </div>
+          <div class="carousel-item promo-burger">
+            <div class="promo-copy">
+              <small>{% trans "Sample promotion" %}</small>
+              <h2 class="h5 mb-1">{% trans "Burger and fries" %}</h2>
+              <span>{% trans "Combo at a special price" %}</span>
+            </div>
+          </div>
+          <div class="carousel-item promo-sushi">
+            <div class="promo-copy">
+              <small>{% trans "Sample promotion" %}</small>
+              <h2 class="h5 mb-1">{% trans "Sushi rolls for two" %}</h2>
+              <span>{% trans "10% off with code ROLLS10" %}</span>
+            </div>
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button"
+                data-bs-target="#bitebox-promos" data-bs-slide="prev">
+          <span class="promo-arrow" aria-hidden="true">‹</span>
+          <span class="visually-hidden">{% trans "Previous promotion" %}</span>
+        </button>
+        <button class="carousel-control-next" type="button"
+                data-bs-target="#bitebox-promos" data-bs-slide="next">
+          <span class="promo-arrow" aria-hidden="true">›</span>
+          <span class="visually-hidden">{% trans "Next promotion" %}</span>
+        </button>
+      </div>
+    </div>
   </section>
 
-  <h2 class="h4">Что хочется сегодня?</h2>
+  <h2 class="h4">{% trans "What are you craving today?" %}</h2>
 
-  <div class="categories" aria-label="Категории ресторанов">
+  <div class="categories" aria-label="{% trans "Restaurant categories" %}">
     <button type="button" class="category active"
             data-category="all" aria-pressed="true">
-      Все
+      {% trans "All" %}
     </button>
 
     <button type="button" class="category"
             data-category="pizza" aria-pressed="false">
-      Пицца
+      {% trans "Pizza" %}
     </button>
 
     <button type="button" class="category"
             data-category="burger" aria-pressed="false">
-      Бургеры
+      {% trans "Burgers" %}
     </button>
 
     <button type="button" class="category"
             data-category="sushi" aria-pressed="false">
-      Суши
+      {% trans "Sushi" %}
     </button>
   </div>
 
   <section id="restaurants">
-    <h2 class="h4 mb-4">Рестораны рядом</h2>
+    <h2 class="h4 mb-4">{% trans "Restaurants nearby" %}</h2>
 
     <div class="row g-4">
 
@@ -149,15 +278,34 @@
 
           <div class="restaurant-info">
             <h3>Urban Burger</h3>
-            <p>Бургеры · Американская кухня</p>
-            <p>Рейтинг: 4,8 · 20–30 минут</p>
-            <p>Доставка: 400 ₸</p>
+            <p>{% trans "Burgers · American cuisine" %}</p>
+            <p>{% trans "Rating: 4.8 · 20–30 min" %}</p>
+            <p>{% trans "Delivery: 400 ₸" %}</p>
 
             <details>
-              <summary>Посмотреть меню</summary>
-              <ul>
-                <li>Чизбургер — 1 800 ₸</li>
-                <li>Картофель фри — 900 ₸</li>
+              <summary>{% trans "View menu" %}</summary>
+              <ul class="list-unstyled">
+                <li class="bb-menu-dish">
+                  <span>{% trans "Cheeseburger" %} — 1 800 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="urban-burger-1" data-name="Чизбургер"
+                          data-restaurant="Urban Burger" data-price="1800"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
+                <li class="bb-menu-dish">
+                  <span>{% trans "French fries" %} — 900 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="urban-burger-2" data-name="Картофель фри"
+                          data-restaurant="Urban Burger" data-price="900"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
+                <li class="bb-menu-dish">
+                  <span>{% trans "Lemonade" %} — 700 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="urban-burger-3" data-name="Лимонад"
+                          data-restaurant="Urban Burger" data-price="700"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
               </ul>
             </details>
           </div>
@@ -170,15 +318,34 @@
 
           <div class="restaurant-info">
             <h3>Casa Pizza</h3>
-            <p>Пицца · Итальянская кухня</p>
-            <p>Рейтинг: 4,7 · 25–35 минут</p>
-            <p>Доставка: 500 ₸</p>
+            <p>{% trans "Pizza · Italian cuisine" %}</p>
+            <p>{% trans "Rating: 4.7 · 25–35 min" %}</p>
+            <p>{% trans "Delivery: 500 ₸" %}</p>
 
             <details>
-              <summary>Посмотреть меню</summary>
-              <ul>
-                <li>Маргарита — 2 500 ₸</li>
-                <li>Пепперони — 2 900 ₸</li>
+              <summary>{% trans "View menu" %}</summary>
+              <ul class="list-unstyled">
+                <li class="bb-menu-dish">
+                  <span>{% trans "Margherita" %} — 2 500 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="casa-pizza-1" data-name="Маргарита"
+                          data-restaurant="Casa Pizza" data-price="2500"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
+                <li class="bb-menu-dish">
+                  <span>{% trans "Pepperoni" %} — 2 900 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="casa-pizza-2" data-name="Пепперони"
+                          data-restaurant="Casa Pizza" data-price="2900"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
+                <li class="bb-menu-dish">
+                  <span>{% trans "Lemonade" %} — 900 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="casa-pizza-3" data-name="Лимонад"
+                          data-restaurant="Casa Pizza" data-price="900"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
               </ul>
             </details>
           </div>
@@ -191,15 +358,27 @@
 
           <div class="restaurant-info">
             <h3>Nori Sushi</h3>
-            <p>Суши · Японская кухня</p>
-            <p>Рейтинг: 4,9 · 30–40 минут</p>
-            <p>Доставка: 600 ₸</p>
+            <p>{% trans "Sushi · Japanese cuisine" %}</p>
+            <p>{% trans "Rating: 4.9 · 30–40 min" %}</p>
+            <p>{% trans "Delivery: 600 ₸" %}</p>
 
             <details>
-              <summary>Посмотреть меню</summary>
-              <ul>
-                <li>Филадельфия — 3 200 ₸</li>
-                <li>Сет на двоих — 6 900 ₸</li>
+              <summary>{% trans "View menu" %}</summary>
+              <ul class="list-unstyled">
+                <li class="bb-menu-dish">
+                  <span>{% trans "Philadelphia rolls" %} — 3 200 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="nori-sushi-1" data-name="Филадельфия"
+                          data-restaurant="Nori Sushi" data-price="3200"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
+                <li class="bb-menu-dish">
+                  <span>{% trans "Set for two" %} — 6 900 ₸</span>
+                  <button type="button" class="bb-heart js-fav"
+                          data-fav-id="nori-sushi-2" data-name="Сет на двоих"
+                          data-restaurant="Nori Sushi" data-price="6900"
+                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                </li>
               </ul>
             </details>
           </div>
@@ -210,7 +389,7 @@
   </section>
 
   <p class="text-muted small mt-4">
-    (Тестовые рестораны и цены. Оформление заказа пока не подключено.)
+    ({% trans "Sample restaurants and prices. Checkout is not available yet." %})
   </p>
 
 </div>
@@ -238,5 +417,18 @@
     });
   });
 </script>
+
+<script src="{% static 'js/favorites.js' %}"
+        data-add='{% trans "Add to favorites" %}'
+        data-remove-heart='{% trans "Remove from favorites" %}'
+        data-remove='{% trans "Remove" %}'
+        data-dish-1='{% trans "Cheeseburger" %}'
+        data-dish-2='{% trans "French fries" %}'
+        data-dish-3='{% trans "Lemonade" %}'
+        data-dish-4='{% trans "Margherita" %}'
+        data-dish-5='{% trans "Pepperoni" %}'
+        data-dish-6='{% trans "Philadelphia rolls" %}'
+        data-dish-7='{% trans "Set for two" %}'></script>
+
 
 {% endblock %}
