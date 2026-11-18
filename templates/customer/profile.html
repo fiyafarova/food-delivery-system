@@ -3,8 +3,11 @@
 
 {% block title %}{% trans "Profile" %} — BiteBox{% endblock %}
 
+{% block page_messages %}{% endblock page_messages %}
+
 {% block content %}
 {% trans "Not specified" as not_specified %}
+{% get_current_language as profile_language %}
 <style>
     .bb-account {
         background: var(--bb-bg);
@@ -120,12 +123,26 @@
             width: 100%;
         }
     }
+    .bb-account .bb-account-symbol {
+        display: grid;
+        place-items: center;
+        width: 3rem;
+        height: 3rem;
+        flex: 0 0 3rem;
+        border-radius: .875rem;
+        background: var(--bb-peach);
+        color: var(--bb-orange-dark);
+    }
+    .bb-account .bb-account-symbol svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
 </style>
 
 <div class="bb-account">
     <div class="container py-4 py-md-5">
 
-        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+        <header class="d-flex justify-content-between align-items-center gap-2 mb-3">
             <h1 class="h2 fw-bold mb-0">{% trans "My account" %}</h1>
             {% if logout_url %}
             <form method="post" action="{{ logout_url }}">
@@ -133,25 +150,24 @@
                 <button type="submit" class="btn btn-bb-outline btn-sm">{% trans "Log out" %}</button>
             </form>
             {% endif %}
-        </div>
+        </header>
 
-        {% for message in messages %}
-        <div class="alert alert-success mb-3" role="alert">{{ message }}</div>
-        {% endfor %}
-
-        <ul class="nav bb-tabs flex-nowrap mb-4">
-            <li class="nav-item">
-                <a class="nav-link {% if tab == 'personal' %}active{% endif %}" href="{{ profile_url }}?tab=personal">{% trans "Personal details" %}</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if tab == 'address' %}active{% endif %}" href="{{ profile_url }}?tab=address">{% trans "Delivery address" %}</a>
-            </li>
-            {% for item in extra_nav %}
-            <li class="nav-item">
-                <a class="nav-link" href="{{ item.url }}">{{ item.label }}</a>
-            </li>
-            {% endfor %}
-        </ul>
+        <nav aria-label="{% trans 'Profile' %}">
+            <ul class="nav bb-tabs flex-nowrap mb-4">
+                <li class="nav-item">
+                    <a class="nav-link{% if tab == 'personal' %} active{% endif %}" href="{{ profile_url }}?tab=personal"{% if tab == 'personal' %} aria-current="page"{% endif %}>{% trans "Personal details" %}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if tab == 'address' %} active{% endif %}" href="{{ profile_url }}?tab=address"{% if tab == 'address' %} aria-current="page"{% endif %}>{% trans "Delivery address" %}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if tab == 'cards' %} active{% endif %}" href="{{ profile_url }}?tab=cards"{% if tab == 'cards' %} aria-current="page"{% endif %}>{% if profile_language == "ru" %}Карты{% else %}Cards{% endif %}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if tab == 'orders' %} active{% endif %}" href="{{ profile_url }}?tab=orders"{% if tab == 'orders' %} aria-current="page"{% endif %}>{% if profile_language == "ru" %}История заказов{% else %}Order history{% endif %}</a>
+                </li>
+            </ul>
+        </nav>
 
         {% if tab == "personal" %}
 
@@ -204,7 +220,7 @@
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3 gap-md-4">
                     <div class="bb-avatar" aria-hidden="true">{{ initials }}</div>
-                    <div>
+                    <div class="text-break">
                         <div class="h4 fw-bold mb-1">{{ request.user.get_full_name|default:request.user.get_username }}</div>
                         <div class="mb-1"><span class="bb-label">Email:</span> {{ request.user.email|default:not_specified }}</div>
                         <div><span class="bb-label">{% trans "Phone:" %}</span> {{ profile.phone|default:not_specified }}</div>
@@ -215,34 +231,49 @@
             {% endif %}
         </div>
 
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <div class="bb-card bb-card-sm h-100">
-                    <div class="fw-bold mb-2">{% trans "Delivery address" %}</div>
-                    <div class="mb-1"><span class="bb-label">{% trans "City:" %}</span> {{ profile.city|default:not_specified }}</div>
-                    <div class="mb-3"><span class="bb-label">{% trans "Address:" %}</span> {{ profile.address|default:not_specified }}</div>
-                    <a class="bb-link" href="{{ profile_url }}?tab=address">{% trans "View delivery address" %}</a>
-                </div>
-            </div>
-            {% if favorites_url %}
-            <div class="col-12 col-md-6">
-                <div class="bb-card bb-card-sm h-100">
-                    <div class="fw-bold mb-2">{% trans "Favorite restaurants" %}</div>
-                    <p class="text-muted mb-3">{% trans "Restaurants you have saved." %}</p>
-                    <a class="bb-link" href="{{ favorites_url }}">{% trans "Open favorites" %}</a>
-                </div>
-            </div>
-            {% endif %}
+        <div class="bb-card bb-card-sm">
+            <h2 class="h6 fw-bold mb-2">{% trans "Delivery address" %}</h2>
+            <div class="mb-1"><span class="bb-label">{% trans "City:" %}</span> {{ profile.city|default:not_specified }}</div>
+            <div class="mb-3"><span class="bb-label">{% trans "Address:" %}</span> {{ profile.address|default:not_specified }}</div>
+            <a class="bb-link" href="{{ profile_url }}?tab=address">{% trans "View delivery address" %}</a>
         </div>
+
+        {% elif tab == "cards" %}
+        <section class="bb-card d-flex flex-wrap align-items-start gap-3">
+            <div class="bb-account-symbol" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                    <rect x="2.5" y="5" width="19" height="14" rx="2"></rect><path d="M3 10h18M6 15h5"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="h5 fw-bold mb-2">{% if profile_language == "ru" %}Банковская карта{% else %}Bank card{% endif %}</h2>
+                <p class="text-muted mb-3">{% if profile_language == "ru" %}При оформлении можно выбрать тестовую карту. Онлайн-оплата пока недоступна.{% else %}You can choose a test card at checkout. Online payment is currently unavailable.{% endif %}</p>
+                <a class="btn btn-bb-outline" href="{% url 'customer:cart' %}">{% if profile_language == "ru" %}К корзине{% else %}Go to cart{% endif %}</a>
+            </div>
+        </section>
+
+        {% elif tab == "orders" %}
+        <section class="bb-card d-flex flex-wrap align-items-start gap-3">
+            <div class="bb-account-symbol" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="h5 fw-bold mb-2">{% if profile_language == "ru" %}История заказов{% else %}Order history{% endif %}</h2>
+                <p class="text-muted mb-0">{% if profile_language == "ru" %}История появится здесь, когда заработает отправка заказов.{% else %}Order history will appear here once order submission is available.{% endif %}</p>
+            </div>
+        </section>
 
         {% else %}
 
         <div class="bb-card">
             {% if editing %}
-            <h2 class="h5 fw-bold mb-3">{% trans "Edit address" %}</h2>
+            <h2 class="h5 fw-bold mb-3">{% if address_target == "new" or not profile.address %}{% if profile_language == "ru" %}Добавить адрес{% else %}Add address{% endif %}{% else %}{% trans "Edit address" %}{% endif %}</h2>
             <form method="post" action="{{ profile_url }}?tab=address" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="form_type" value="address">
+                <input type="hidden" name="address_target" value="{{ address_target }}">
                 <div class="row g-3">
                     <div class="col-12 col-md-4">
                         <label for="id_city" class="form-label fw-semibold">{% trans "City" %}</label>
@@ -276,10 +307,28 @@
                     <div class="mb-1"><span class="bb-label">{% trans "City:" %}</span> {{ profile.city|default:not_specified }}</div>
                     <div><span class="bb-label">{% trans "Address:" %}</span> {{ profile.address|default:not_specified }}</div>
                 </div>
-                <a href="{{ profile_url }}?tab=address&edit=1" class="btn btn-bb">{% trans "Edit address" %}</a>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if profile.address %}
+                    <a href="{{ profile_url }}?tab=address&amp;edit=1" class="btn btn-bb-outline">{% trans "Edit address" %}</a>
+                    <a href="{{ profile_url }}?tab=address&amp;edit=1&amp;address_target=new" class="btn btn-bb">{% if profile_language == "ru" %}Добавить адрес{% else %}Add address{% endif %}</a>
+                    {% else %}
+                    <a href="{{ profile_url }}?tab=address&amp;edit=1" class="btn btn-bb">{% if profile_language == "ru" %}Добавить адрес{% else %}Add address{% endif %}</a>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
         </div>
+        {% if not editing %}
+            {% for saved_address in delivery_addresses %}
+            <div class="bb-card bb-card-sm mt-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="text-break">
+                    <div class="fw-semibold">{{ saved_address.address }}</div>
+                    <div class="bb-label">{{ saved_address.city }}</div>
+                </div>
+                <a href="{{ profile_url }}?tab=address&amp;edit=1&amp;address_target={{ saved_address.pk }}" class="btn btn-bb-outline">{% trans "Edit address" %}</a>
+            </div>
+            {% endfor %}
+        {% endif %}
 
         {% endif %}
     </div>

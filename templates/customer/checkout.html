@@ -1,7 +1,378 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% block title %}{% trans "Checkout" %}{% endblock %}
+{% load i18n l10n %}
+{% block title %}{% if LANGUAGE_CODE == "ru" %}Оформление заказа{% else %}Checkout{% endif %} — BiteBox{% endblock %}
 {% block content %}
-<h1 class="h3 mb-3">{% trans "Checkout" %}</h1>
-<p class="text-muted">ToDo: Dilnaz</p>
+{% get_current_language as checkout_language %}
+<style>
+    .bb-checkout .checkout-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--bb-border);
+    }
+    .bb-checkout h1, .bb-checkout a, .bb-checkout .checkout-total { color: var(--bb-orange-dark); }
+    .bb-checkout h1 { font-size: clamp(1.75rem, 3.25vw, 2.625rem); font-weight: 600; }
+    .bb-checkout .checkout-panel {
+        padding: clamp(1rem, 2.5vw, 1.75rem);
+        border: 1px solid var(--bb-border);
+        border-radius: 1.25rem;
+        background: #fff;
+    }
+    .bb-checkout .checkout-summary { box-shadow: 0 8px 24px rgba(var(--bb-accent-rgb), .08); }
+    .bb-checkout .checkout-photo {
+        flex: 0 0 64px;
+        width: 64px;
+        height: 64px;
+        border-radius: .75rem;
+        object-fit: cover;
+        background: var(--bb-peach);
+    }
+    .bb-checkout .checkout-item + .checkout-item {
+        border-top: 1px solid var(--bb-border);
+    }
+    .bb-checkout .checkout-total { border-top: 1px solid var(--bb-border); }
+    .bb-checkout .form-control { border-color: var(--bb-border); }
+    .bb-checkout .form-control:focus {
+        border-color: var(--bb-orange);
+        box-shadow: 0 0 0 .2rem rgba(var(--bb-accent-rgb), .15);
+    }
+    .bb-checkout .checkout-note { background: var(--bb-peach); color: var(--bb-text); }
+    .bb-checkout .checkout-qty {
+        display: inline-flex;
+        align-items: center;
+        gap: .625rem;
+    }
+    .bb-checkout .checkout-qty button,
+    .bb-checkout .checkout-card-option {
+        border: 1px solid var(--bb-border);
+        color: var(--bb-orange-dark);
+        background: var(--bb-bg);
+    }
+    .bb-checkout .checkout-qty button {
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: .75rem;
+    }
+    .bb-checkout .checkout-qty button:hover,
+    .bb-checkout .checkout-card-option:hover {
+        border-color: var(--bb-orange);
+        background: var(--bb-peach);
+    }
+    .bb-checkout .checkout-card-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .75rem;
+        width: 100%;
+        border-radius: .75rem;
+        padding: .75rem 1rem;
+        text-align: start;
+    }
+    .bb-checkout .modal-content {
+        border: 1px solid var(--bb-border);
+        border-radius: 1.25rem;
+    }
+    .bb-checkout .checkout-submit {
+        background: var(--bb-orange);
+        color: #fff;
+    }
+    @media (min-width: 992px) {
+        .bb-checkout .checkout-summary { position: sticky; top: 1rem; }
+    }
+</style>
+
+<div class="bb-checkout" id="checkout-page"
+     data-update-url="{% url 'customer:cart_update' %}" data-cart-url="{% url 'customer:cart' %}"
+     data-update-error="{% trans 'Could not update the cart' %}"
+     data-subtotal-minor="{{ cart.subtotal_minor|stringformat:'d' }}"
+     {% if cart.total_minor != None %}data-total-minor="{{ cart.total_minor|stringformat:'d' }}"{% endif %}>
+    <header class="checkout-header">
+        <a class="d-inline-block mb-2 fw-semibold text-decoration-none" href="{% url 'customer:cart' %}">← {% trans "Cart" %}</a>
+        <h1 class="mb-0">{% if checkout_language == "ru" %}Оформление заказа{% else %}Checkout{% endif %}</h1>
+    </header>
+    <div class="row g-4">
+        <div class="col-12 col-lg-7">
+            <section class="checkout-panel mb-4">
+                <h2 class="h5 mb-3">{% trans "Delivery address" %}</h2>
+                <form class="row g-3" id="checkout-draft" method="post" action="{% url 'customer:checkout' %}"
+                      data-success="{% trans 'Changes saved' %}">
+                    {% csrf_token %}
+                    <div class="col-12 col-md-6">
+                        <label for="checkout-city" class="form-label">{% trans "City" %}</label>
+                        <input id="checkout-city" name="city" maxlength="100" class="form-control" autocomplete="address-level2" value="{{ draft.city|default:'' }}">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="checkout-phone" class="form-label">{% trans "Phone" %}</label>
+                        <input id="checkout-phone" name="phone" maxlength="20" class="form-control" type="tel" autocomplete="tel" value="{{ draft.phone|default:'' }}">
+                    </div>
+                    <div class="col-12">
+                        <label for="checkout-address" class="form-label">{% trans "Address" %}</label>
+                        <input id="checkout-address" name="address" maxlength="255" class="form-control" autocomplete="street-address" value="{{ draft.address|default:'' }}">
+                    </div>
+                    <div class="col-12">
+                        <label for="checkout-comment" class="form-label">{% if checkout_language == "ru" %}Комментарий для курьера{% else %}Note for the courier{% endif %}</label>
+                        <textarea id="checkout-comment" name="comment" class="form-control" rows="2" maxlength="500">{{ draft.comment|default:'' }}</textarea>
+                    </div>
+                    <div class="col-12 d-flex flex-wrap align-items-center gap-2">
+                        <button class="btn checkout-submit" type="submit">{% trans "Save" %}</button>
+                        <span class="small" id="checkout-draft-status" role="status"
+                              data-error="{% if checkout_language == 'ru' %}Не удалось сохранить данные. Проверьте поля и попробуйте ещё раз.{% else %}Could not save. Check the fields and try again.{% endif %}">
+                            {% if draft_error %}{% if checkout_language == "ru" %}Проверьте длину заполненных полей.{% else %}Check the length of the entered fields.{% endif %}{% endif %}
+                        </span>
+                    </div>
+                </form>
+            </section>
+
+            <section class="checkout-panel mb-4" id="checkout-items">
+                <div hidden>{% csrf_token %}</div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h2 class="h5 mb-0">{% if checkout_language == "ru" %}Позиции в заказе{% else %}Order items{% endif %}</h2>
+                    <a href="{% url 'customer:menu' %}">+ {% if checkout_language == "ru" %}Добавить ещё{% else %}Add more{% endif %}</a>
+                </div>
+                <p class="text-muted small mt-2 mb-0">{{ cart.restaurant_name }}</p>
+                <p id="checkout-items-error" class="alert alert-warning mt-3 mb-0" role="alert" hidden></p>
+                {% for line in cart.lines %}
+                    <div class="checkout-item d-flex flex-wrap align-items-center gap-3 py-3" data-checkout-dish="{{ line.id|unlocalize }}">
+                        {% if line.image_url %}<img class="checkout-photo" src="{{ line.image_url }}" alt="">{% endif %}
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ line.name }}</div>
+                            <div class="text-muted small">{{ line.price_display }}</div>
+                            <div class="checkout-qty mt-2">
+                                <button type="button" data-checkout-step="-1" aria-label="{% trans 'Decrease quantity' %} − {{ line.name }}">−</button>
+                                <span data-checkout-quantity>{{ line.quantity }}</span>
+                                <button type="button" data-checkout-step="1" aria-label="{% trans 'Increase quantity' %} − {{ line.name }}">+</button>
+                            </div>
+                        </div>
+                        <strong class="text-nowrap" data-checkout-line-total>{{ line.total_display }}</strong>
+                    </div>
+                {% endfor %}
+            </section>
+
+            <section class="checkout-panel mb-4">
+                <h2 class="h5 mb-2">{% if checkout_language == "ru" %}Оплата{% else %}Payment{% endif %}</h2>
+                <button class="checkout-card-option" type="button" data-bs-toggle="modal" data-bs-target="#checkout-payment">
+                    <span>
+                        <strong class="d-block">{% if checkout_language == "ru" %}Карта{% else %}Card{% endif %}</strong>
+                        <span class="small text-muted" id="checkout-card-selection" aria-live="polite">{% if checkout_language == "ru" %}Выбрать тестовую карту{% else %}Choose a test card{% endif %}</span>
+                    </span>
+                    <span aria-hidden="true">›</span>
+                </button>
+            </section>
+
+            <section class="checkout-panel">
+                <h2 class="h5 mb-3">{% if checkout_language == "ru" %}Промокод{% else %}Promo code{% endif %}</h2>
+                <form id="checkout-promo-form"
+                      data-success="{% if checkout_language == 'ru' %}Тестовый промокод применён.{% else %}Test promo code applied.{% endif %}"
+                      data-invalid="{% if checkout_language == 'ru' %}Промокод не найден.{% else %}Promo code not found.{% endif %}">
+                    <label for="checkout-promo" class="visually-hidden">{% if checkout_language == "ru" %}Промокод{% else %}Promo code{% endif %}</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input class="form-control w-auto flex-grow-1" id="checkout-promo" type="text"
+                               maxlength="32" autocomplete="off" spellcheck="false" required
+                               aria-describedby="checkout-promo-hint checkout-promo-status"
+                               placeholder="{% if checkout_language == 'ru' %}Введите промокод{% else %}Enter a promo code{% endif %}">
+                        <button class="btn checkout-submit" type="submit">{% if checkout_language == "ru" %}Применить{% else %}Apply{% endif %}</button>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0" id="checkout-promo-hint">
+                        {% if checkout_language == "ru" %}Тестовый код BITE10 даёт скидку 10% на блюда.{% else %}Use test code BITE10 for 10% off dishes.{% endif %}
+                    </p>
+                    <p class="small mt-2 mb-0" id="checkout-promo-status" role="status" hidden></p>
+                </form>
+            </section>
+        </div>
+
+        <aside class="col-12 col-lg-5">
+            <div class="checkout-panel checkout-summary">
+                <h2 class="h5 mb-4">{% trans "Summary" %}</h2>
+                <dl class="mb-3" aria-live="polite">
+                    <div class="d-flex justify-content-between gap-3 mb-2">
+                        <dt class="fw-normal">{% trans "Subtotal" %}</dt>
+                        <dd class="mb-0" id="checkout-subtotal">{{ cart.subtotal_display }}</dd>
+                    </div>
+                    <div class="d-flex justify-content-between gap-3">
+                        <dt class="fw-normal">{% trans "Delivery" %}</dt>
+                        <dd class="mb-0">{% if cart.delivery_display %}{{ cart.delivery_display }}{% else %}—{% endif %}</dd>
+                    </div>
+                    <div class="d-flex justify-content-between gap-3 mt-2 d-none" id="checkout-discount-row">
+                        <dt class="fw-normal">{% if checkout_language == "ru" %}Скидка{% else %}Discount{% endif %}</dt>
+                        <dd class="mb-0" id="checkout-discount"></dd>
+                    </div>
+                    {% if cart.total_display %}
+                    <div class="checkout-total d-flex justify-content-between gap-3 mt-3 pt-3 fs-5 fw-bold">
+                        <dt>{% trans "Total to pay" %}</dt>
+                        <dd class="mb-0" id="checkout-payable">{{ cart.total_display }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+                <button class="btn checkout-submit w-100" type="button" disabled>
+                    {% if checkout_language == "ru" %}Разместить заказ{% else %}Place order{% endif %}
+                </button>
+                <p class="checkout-note rounded-3 p-3 small mt-3 mb-0">
+                    {% if checkout_language == "ru" %}Отправка заказа пока не подключена.{% else %}Order submission is not available yet.{% endif %}
+                </p>
+            </div>
+        </aside>
+    </div>
+
+    <div class="modal fade" id="checkout-payment" tabindex="-1" aria-labelledby="checkout-payment-title">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="checkout-payment-title">{% if checkout_language == "ru" %}Способы оплаты{% else %}Payment methods{% endif %}</h2>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="{% if checkout_language == 'ru' %}Закрыть{% else %}Close{% endif %}"></button>
+                </div>
+                <div class="modal-body">
+                    <h3 class="h6 mb-2">{% if checkout_language == "ru" %}Тестовые карты{% else %}Test cards{% endif %}</h3>
+                    <p class="text-muted small">{% if checkout_language == "ru" %}Демонстрация выбора карты. Не вводите данные настоящей карты.{% else %}Payment selection demo. Do not enter real card details.{% endif %}</p>
+                    <button class="checkout-card-option mb-2" type="button" data-demo-card="4242" data-bs-dismiss="modal">
+                        <strong>•••• 4242</strong><span>{% if checkout_language == "ru" %}Выбрать{% else %}Select{% endif %}</span>
+                    </button>
+                    <button class="checkout-card-option mb-3" type="button" data-demo-card="5556" data-bs-dismiss="modal">
+                        <strong>•••• 5556</strong><span>{% if checkout_language == "ru" %}Выбрать{% else %}Select{% endif %}</span>
+                    </button>
+                    <form id="checkout-demo-card-form">
+                        <label for="checkout-demo-card" class="form-label">{% if checkout_language == "ru" %}Последние 4 цифры тестовой карты{% else %}Last 4 digits of a test card{% endif %}</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <input type="text" id="checkout-demo-card" class="form-control w-auto" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]{4}" required>
+                            <button class="btn checkout-submit" type="submit">{% if checkout_language == "ru" %}Выбрать{% else %}Select{% endif %}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (() => {
+        const checkout = document.getElementById("checkout-page");
+        let subtotal = Number(checkout.dataset.subtotalMinor);
+        let total = checkout.dataset.totalMinor;
+        const payable = document.getElementById("checkout-payable");
+        const promoForm = document.getElementById("checkout-promo-form");
+        const promoInput = document.getElementById("checkout-promo");
+        const promoStatus = document.getElementById("checkout-promo-status");
+        const discountRow = document.getElementById("checkout-discount-row");
+        const discountValue = document.getElementById("checkout-discount");
+        const formatter = new Intl.NumberFormat(document.documentElement.lang || "ru");
+        const money = (minor) => formatter.format(minor / 100) + " ₸";
+        let promoApplied = false;
+
+        function renderDiscount() {
+            const discount = promoApplied ? Math.round(subtotal / 10) : 0;
+            discountRow.classList.toggle("d-none", !promoApplied);
+            discountValue.textContent = "−" + money(discount);
+            if (payable) payable.textContent = money(Number(total) - discount);
+        }
+
+        promoForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const valid = promoInput.value.trim().toUpperCase() === "BITE10";
+            promoApplied = valid;
+            promoInput.toggleAttribute("aria-invalid", !valid);
+            promoStatus.hidden = false;
+            promoStatus.classList.toggle("text-danger", !valid);
+            promoStatus.textContent = valid ? promoForm.dataset.success : promoForm.dataset.invalid;
+            renderDiscount();
+        });
+        promoInput.addEventListener("input", () => {
+            if (promoApplied && promoInput.value.trim().toUpperCase() === "BITE10") return;
+            promoApplied = false;
+            promoInput.removeAttribute("aria-invalid");
+            promoStatus.hidden = true;
+            renderDiscount();
+        });
+
+        const items = document.getElementById("checkout-items");
+        const updateError = document.getElementById("checkout-items-error");
+        const quantityButtons = Array.from(items.querySelectorAll("[data-checkout-step]"));
+        let updating = false;
+
+        items.addEventListener("click", async (event) => {
+            const button = event.target.closest("[data-checkout-step]");
+            if (!button || updating) return;
+            const row = button.closest("[data-checkout-dish]");
+            const quantity = row.querySelector("[data-checkout-quantity]");
+            const id = row.dataset.checkoutDish;
+            updating = true;
+            updateError.hidden = true;
+            for (const control of quantityButtons) control.disabled = true;
+            try {
+                const response = await fetch(checkout.dataset.updateUrl, {
+                    method: "POST",
+                    headers: {"X-Requested-With": "XMLHttpRequest"},
+                    body: new URLSearchParams({
+                        csrfmiddlewaretoken: items.querySelector("[name=csrfmiddlewaretoken]").value,
+                        dish_id: id,
+                        quantity: Number(quantity.textContent) + Number(button.dataset.checkoutStep)
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || checkout.dataset.updateError);
+                if (!result.can_checkout) {
+                    window.location.assign(checkout.dataset.cartUrl);
+                    return;
+                }
+                const line = result.lines[id];
+                if (line) {
+                    quantity.textContent = line.quantity;
+                    row.querySelector("[data-checkout-line-total]").textContent = line.total;
+                } else {
+                    row.remove();
+                }
+                subtotal = result.subtotal_minor;
+                total = result.total_minor;
+                document.getElementById("checkout-subtotal").textContent = result.subtotal;
+                document.querySelectorAll("[data-cart-count]").forEach((badge) => {
+                    badge.textContent = result.count;
+                });
+                renderDiscount();
+            } catch {
+                updateError.textContent = checkout.dataset.updateError;
+                updateError.hidden = false;
+            } finally {
+                updating = false;
+                for (const control of quantityButtons) control.disabled = false;
+            }
+        });
+
+        const draft = document.getElementById("checkout-draft");
+        const draftStatus = document.getElementById("checkout-draft-status");
+        const saveDraft = draft.querySelector('button[type="submit"]');
+        draft.addEventListener("input", () => { draftStatus.textContent = ""; });
+        draft.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (saveDraft.disabled) return;
+            saveDraft.disabled = true;
+            try {
+                const response = await fetch(draft.action, {
+                    method: "POST",
+                    headers: {"X-Requested-With": "XMLHttpRequest"},
+                    body: new FormData(draft)
+                });
+                if (!response.ok) throw new Error();
+                draftStatus.textContent = draft.dataset.success;
+            } catch {
+                draftStatus.textContent = draftStatus.dataset.error;
+            } finally {
+                saveDraft.disabled = false;
+            }
+        });
+
+        const payment = document.getElementById("checkout-payment");
+        const selection = document.getElementById("checkout-card-selection");
+        const demoCard = document.getElementById("checkout-demo-card");
+        for (const option of payment.querySelectorAll("[data-demo-card]")) {
+            option.addEventListener("click", () => {
+                selection.textContent = "•••• " + option.dataset.demoCard;
+            });
+        }
+        document.getElementById("checkout-demo-card-form").addEventListener("submit", (event) => {
+            event.preventDefault();
+            if (!/^[0-9]{4}$/.test(demoCard.value)) return;
+            selection.textContent = "•••• " + demoCard.value;
+            demoCard.value = "";
+            bootstrap.Modal.getOrCreateInstance(payment).hide();
+        });
+
+        renderDiscount();
+    })();
+</script>
 {% endblock %}

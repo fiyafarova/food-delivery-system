@@ -22,3 +22,12 @@ class CustomerProfile(models.Model):
     address = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=100, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class DeliveryAddress(models.Model):
+    profile = models.ForeignKey(CustomerProfile, on_delete=models.CASCADE, related_name="delivery_addresses")
+    city = models.CharField(max_length=100)
+    address = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ["pk"]

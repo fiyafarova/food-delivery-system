@@ -4,23 +4,36 @@ from .models import Category
 
 
 class FlowTests(APITestCase):
-    def register_login(self, username, role):
-        r = self.client.post('/api/auth/register/', {
-            'username': username, 'email': f'{username}@x.com',
-            'password': 'Str0ng!Pass99', 'role': role}, format='json')
-        self.assertEqual(r.status_code, 201, r.data)
-        t = self.client.post('/api/auth/login/', {
-            'username': username, 'password': 'Str0ng!Pass99'}, format='json')
-        self.assertEqual(t.status_code, 200)
-        return t.data['access']
+    password = 'Str0ng!Pass99'
+
+    @classmethod
+    def setUpTestData(cls):
+        for username in ('owner1', 'owner2'):
+            User.objects.create_user(
+                username=username, email=f'{username}@example.test',
+                password=cls.password, role=User.Role.OWNER,
+            )
+
+    def login(self, username):
+        response = self.client.post('/api/auth/login/', {
+            'username': username, 'password': self.password,
+        }, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        return response.data['access']
 
     def auth(self, token):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
     def test_full_flow(self):
-        owner = self.register_login('owner1', 'owner')
-        other = self.register_login('owner2', 'owner')
-        cust = self.register_login('cust1', 'customer')
+        owner = self.login('owner1')
+        other = self.login('owner2')
+        registration = self.client.post('/api/auth/register/', {
+            'username': 'cust1', 'email': 'cust1@example.test',
+            'password': self.password, 'role': User.Role.OWNER,
+        }, format='json')
+        self.assertEqual(registration.status_code, 201, registration.data)
+        self.assertEqual(User.objects.get(username='cust1').role, User.Role.CUSTOMER)
+        cust = self.login('cust1')
 
         # profile
         self.auth(cust)
@@ -40,7 +53,7 @@ class FlowTests(APITestCase):
         self.assertEqual(r.status_code, 201, r.data)
         rid = r.data['id']
 
-        # category: owner cannot, admin can
+        # category: owner cannot create it through the API
         r = self.client.post('/api/categories/', {'name': 'Pizza'}, format='json')
         self.assertEqual(r.status_code, 403)
         cat = Category.objects.create(name='Pizza')

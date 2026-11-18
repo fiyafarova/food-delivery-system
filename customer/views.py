@@ -1,27 +1,64 @@
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
 from django.utils.translation import gettext
 
-from accounts.models import CustomerProfile
+from accounts.models import CustomerProfile, DeliveryAddress
+from restaurants.models import Restaurant
 
+from .cart import build_cart
 from .forms import AddressForm, PersonalForm
-from django.shortcuts import render
-from core.models import FoodItem
 
+@ensure_csrf_cookie
 def menu(request):
-    items = FoodItem.objects.order_by("category", "name")
-    return render(request, "customer/menu.html", {"items": items})
+    restaurants = list(Restaurant.objects.filter(is_open=True).prefetch_related("food_items"))
+    cart = build_cart(request)
+    return render(request, "customer/menu.html", {
+        "restaurants": restaurants,
+        "cuisines": sorted({restaurant.cuisine for restaurant in restaurants if restaurant.cuisine}),
+        "cart_dish_ids": {line["id"] for line in cart["lines"]},
+    })
 
 
 def cart(request):
     return render(request, "customer/cart.html")
 
 
+CHECKOUT_DRAFT_KEY = "checkout_draft"
+CHECKOUT_FIELD_LIMITS = {"city": 100, "phone": 20, "address": 255, "comment": 500}
+
+
+@require_http_methods(["GET", "POST"])
 def checkout(request):
-    return render(request, "customer/checkout.html")
+    cart = build_cart(request)
+    ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    if not cart["can_checkout"]:
+        if ajax:
+            return JsonResponse({"error": gettext("Could not update the cart")}, status=409)
+        return redirect("customer:cart")
+
+    if request.method == "POST":
+        draft = {field: request.POST.get(field, "").strip() for field in CHECKOUT_FIELD_LIMITS}
+        if any(len(draft[field]) > limit for field, limit in CHECKOUT_FIELD_LIMITS.items()):
+            if ajax:
+                return JsonResponse({"saved": False}, status=400)
+            return render(request, "customer/checkout.html", {"cart": cart, "draft": draft, "draft_error": True}, status=400)
+        request.session[CHECKOUT_DRAFT_KEY] = draft
+        if ajax:
+            return JsonResponse({"saved": True})
+        messages.success(request, gettext("Changes saved"))
+        return redirect("customer:checkout")
+
+    draft = request.session.get(CHECKOUT_DRAFT_KEY)
+    if draft is None:
+        profile = getattr(request.user, "profile", None) if request.user.is_authenticated else None
+        draft = {field: getattr(profile, field, "") for field in CHECKOUT_FIELD_LIMITS}
+    return render(request, "customer/checkout.html", {"cart": cart, "draft": draft})
 
 
 def order_status(request, order_id):
@@ -39,16 +76,26 @@ def profile(request):
     profile_url = reverse("customer:profile")
 
     tab = request.GET.get("tab", "personal")
-    if tab not in ("personal", "address"):
+    if tab not in ("personal", "address", "cards", "orders"):
         tab = "personal"
 
     editing = request.GET.get("edit") == "1"
+    form_type = request.POST.get("form_type") if request.method == "POST" else None
+    address_target = ""
+    address_obj = profile_obj
+    if form_type == "address" or (tab == "address" and editing):
+        address_target = request.POST.get("address_target", "") if form_type == "address" else request.GET.get("address_target", "")
+        if address_target == "new":
+            address_obj = DeliveryAddress(profile=profile_obj)
+        elif address_target:
+            if not address_target.isascii() or not address_target.isdecimal() or len(address_target) > 18:
+                raise Http404
+            address_obj = get_object_or_404(profile_obj.delivery_addresses, pk=int(address_target))
+
     personal_form = PersonalForm(user=user, profile=profile_obj)
-    address_form = AddressForm(profile=profile_obj)
+    address_form = AddressForm(profile=address_obj)
 
     if request.method == "POST":
-        form_type = request.POST.get("form_type")
-
         if form_type == "personal":
             tab = "personal"
             editing = True
@@ -57,20 +104,20 @@ def profile(request):
             )
             if personal_form.is_valid():
                 personal_form.save()
-                messages.success(request, gettext("Changes saved"))
                 return redirect(f"{profile_url}?tab=personal")
 
         elif form_type == "address":
             tab = "address"
             editing = True
-            address_form = AddressForm(request.POST, profile=profile_obj)
+            address_form = AddressForm(request.POST, profile=address_obj)
             if address_form.is_valid():
-                address_form.save()
-                messages.success(request, gettext("Changes saved"))
+                if address_target == "new":
+                    profile_obj.delivery_addresses.create(**address_form.cleaned_data)
+                else:
+                    address_form.save()
                 return redirect(f"{profile_url}?tab=address")
 
     initials = (user.first_name[:1] + user.last_name[:1]).upper()
-    favorites_url = reverse("customer:favorites")
 
     return render(request, "customer/profile.html", {
         "tab": tab,
@@ -78,11 +125,9 @@ def profile(request):
         "profile": profile_obj,
         "personal_form": personal_form,
         "address_form": address_form,
+        "address_target": address_target,
+        "delivery_addresses": profile_obj.delivery_addresses.all() if tab == "address" else (),
         "initials": initials or user.get_username()[:2].upper(),
         "profile_url": profile_url,
         "logout_url": None,
-        "favorites_url": favorites_url,
-        "extra_nav": [
-            {"key": "favorites", "label": gettext("Favorites"), "url": favorites_url},
-        ],
     })

@@ -24,107 +24,142 @@
   }
 
   .bitebox-navbar {
-    background-color: var(--bb-orange);
-    --bs-navbar-padding-y: 0.85rem;
+    background: var(--bb-bg);
+    border-bottom: 1px solid var(--bb-border);
+    --bs-navbar-padding-y: .75rem;
   }
 
   .bitebox-navbar .bitebox-wordmark {
-    color: #fff9f3;
-    font-size: 30px;
-    font-weight: 650;
-    letter-spacing: -0.04em;
-    position: relative;
-    top: -2px;
+    color: var(--bb-orange);
+    margin-inline-end: 1.5rem;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
   }
 
-  .bitebox-navbar .bitebox-account-links .nav-link {
-    font-family: Inter, system-ui, sans-serif;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+  .bitebox-navbar .bitebox-wordmark:hover,
+  .bitebox-navbar .bitebox-wordmark:focus-visible,
+  .bitebox-navbar .nav-link:hover,
+  .bitebox-navbar .nav-link[aria-current="page"] {
+    color: var(--bb-orange-dark);
   }
 
   .bitebox-navbar .nav-link {
-    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 44px;
+    padding: .6rem .75rem;
+    color: var(--bb-text);
+    font-weight: 500;
   }
 
-  .bitebox-navbar .nav-link:hover {
-    text-decoration: underline;
+  .bitebox-navbar .nav-link svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  .bitebox-navbar .navbar-toggler {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .bitebox-navbar :focus-visible {
+    outline: 2px solid var(--bb-orange-dark);
+    outline-offset: 2px;
+  }
+
+  .bitebox-language {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--bb-border);
+    border-radius: 999px;
+    background: #fff;
+  }
+
+  .bitebox-language button {
+    min-height: 32px;
+    padding: .25rem .7rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--bb-muted);
+    font-size: .85rem;
+    font-weight: 600;
+  }
+
+  .bitebox-language button[aria-pressed="true"] {
+    background: var(--bb-orange);
+    color: #fff;
   }
 </style>
 </head>
 <body>
-<nav class="navbar navbar-expand navbar-dark bitebox-navbar">
-  <div class="container flex-wrap gap-2">
-
-    <a class="navbar-brand bitebox-wordmark"
-      href="{% url 'customer:menu' %}">
-      BiteBox
-    </a>
-
-    <ul class="navbar-nav me-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'customer:menu' %}">
-          {% trans "Menu" %}
-        </a>
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'staff:orders' %}">
-          {% trans "Staff" %}
-        </a>
-      </li>
-    </ul>
-
-     <div class="d-flex align-items-center gap-3 bitebox-account-links">
-      <a href="{% url 'customer:favorites' %}"
-      class="nav-link text-white">
-      {% trans "Favorites" %}
-    </a>
-    
-    <a href="{% url 'customer:cart' %}"
-     class="nav-link text-white">
-    {% trans "Cart" %}
-    </a>
-    
-    <a href="{% url 'customer:profile' %}"
-    class="nav-link text-white">
-    {% trans "Profile" %}
-    </a> 
+<nav class="navbar navbar-expand-lg bitebox-navbar">
+  <div class="container">
+    <a class="navbar-brand bitebox-wordmark" href="{% url 'customer:menu' %}">BiteBox</a>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+            data-bs-target="#bitebox-nav" aria-controls="bitebox-nav" aria-expanded="false"
+            aria-label="{% trans 'Toggle navigation' %}">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="bitebox-nav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'customer:menu' %}"{% if request.resolver_match.view_name == 'customer:menu' %} aria-current="page"{% endif %}>{% trans "Menu" %}</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'staff:orders' %}">{% trans "Staff" %}</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav align-items-lg-center">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'customer:favorites' %}"{% if request.resolver_match.view_name == 'customer:favorites' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9.1C1 8.4 3 5 6.4 5c2 0 3.6 1.1 4.4 2.6h.4C12 6.1 13.600 5 15.600 5 19 5 21 8.400 19.300 11.900 17 16.400 12 21 12 21z"/></svg>
+            <span>{% trans "Favorites" %}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'customer:cart' %}"{% if request.resolver_match.view_name == 'customer:cart' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.500"/><circle cx="18" cy="20" r="1.500"/><path d="M2 3h3l2.600 12.200a1 1 0 0 0 1 .8h9.200a1 1 0 0 0 1-.8L21 7H6"/></svg>
+            <span>{% trans "Cart" %}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'customer:profile' %}"{% if request.resolver_match.view_name == 'customer:profile' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span>{% trans "Profile" %}</span>
+          </a>
+        </li>
+        <li class="nav-item ms-lg-2 py-2 py-lg-0">
+          <form action="{% url 'set_language' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            {% get_available_languages as LANGUAGES %}
+            <div class="bitebox-language" role="group" aria-label="{% trans 'Language' %}">
+              {% for code, name in LANGUAGES reversed %}
+                <button type="submit" name="language" value="{{ code }}"
+                        aria-label="{{ name }}" aria-pressed="{% if code == LANGUAGE_CODE %}true{% else %}false{% endif %}">
+                  {{ code|upper }}
+                </button>
+              {% endfor %}
+            </div>
+          </form>
+        </li>
+      </ul>
     </div>
-
-    <form action="{% url 'set_language' %}"
-          method="post"
-          class="d-flex gap-2 ms-4">
-
-      {% csrf_token %}
-
-      <input type="hidden"
-             name="next"
-             value="{{ request.get_full_path }}">
-
-      {% get_available_languages as LANGUAGES %}
-
-      {% for code, name in LANGUAGES %}
-        <button type="submit"
-                name="language"
-                value="{{ code }}"
-                class="btn btn-sm {% if code == LANGUAGE_CODE %}btn-light{% else %}btn-outline-light{% endif %}">
-          {{ code|upper }}
-        </button>
-      {% endfor %}
-
-    </form>
-
   </div>
 </nav>
 
   <main class="container py-4">
+    {% block page_messages %}
     {% if messages %}
       {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">{{ message }}</div>
       {% endfor %}
     {% endif %}
+    {% endblock page_messages %}
     {% block content %}{% endblock %}
   </main>
 
