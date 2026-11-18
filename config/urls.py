@@ -7,5 +7,6 @@ urlpatterns = [
     path("api/", include("accounts.urls")),     # REST API: auth + profile
     path("api/", include("restaurants.urls")),  # REST API: restaurants, categories, foods, search
     path("staff/", include("staff.urls")),
+    path("core/", include("core.urls")),        # JSON API: cart, orders, payments, delivery
     path("", include("customer.urls")),
 ]
