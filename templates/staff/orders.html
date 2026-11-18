@@ -28,6 +28,7 @@
     <thead>
     <tr>
         <th>#</th>
+        <th>{% trans "Restaurant" %}</th>
         <th>{% trans "Customer" %}</th>
         <th>{% trans "Total" %}</th>
         <th>{% trans "Status" %}</th>
@@ -37,6 +38,7 @@
     {% for order in orders %}
     <tr>
         <td><a href="{% url 'staff:order_detail' order.id %}">{{ order.id }}</a></td>
+        <td>{{ order.restaurant }}</td>
         <td>{{ order.customer }}</td>
         <td>{{ order.total }} ₸</td>
         <td><span class="badge text-bg-{{ order.badge }}">{{ order.status }}</span></td>

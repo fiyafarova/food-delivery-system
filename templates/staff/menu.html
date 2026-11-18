@@ -10,6 +10,7 @@
 <table class="table align-middle">
     <thead>
     <tr>
+        <th>{% trans "Restaurant" %}</th>
         <th>{% trans "Dish" %}</th>
         <th>{% trans "Category" %}</th>
         <th>{% trans "Price" %}</th>
@@ -20,8 +21,9 @@
     <tbody>
     {% for item in items %}
     <tr>
+        <td>{{ item.restaurant.name }}</td>
         <td>{{ item.name }}</td>
-        <td>{{ item.category }}</td>
+        <td>{{ item.category|default:"—" }}</td>
         <td>{{ item.price }} ₸</td>
         <td>
             {% if item.is_available %}

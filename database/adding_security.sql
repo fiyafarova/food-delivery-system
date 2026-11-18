@@ -207,7 +207,7 @@ GRANT SELECT ON
     customer,
     food_order,
     order_item,
-    food_item
+    restaurants_fooditem
 TO customer_role;
 
 -- =====================================================
@@ -215,7 +215,7 @@ TO customer_role;
 -- =====================================================
 
 GRANT SELECT ON
-    food_item,
+    restaurants_fooditem,
     food_order,
     order_item,
     customer
@@ -232,7 +232,7 @@ TO staff_role;
 GRANT SELECT ON
     food_order,
     order_item,
-    food_item
+    restaurants_fooditem
 TO courier_role;
 
 GRANT SELECT ON customer TO courier_role;
