@@ -3,7 +3,8 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Customer, FoodItem, FoodOrder, OrderItem
+from core.models import Customer, FoodOrder, OrderItem
+from restaurants.models import FoodItem, Restaurant
 
 from .permissions import STAFF_GROUP
 
@@ -15,27 +16,35 @@ def make_user(username, staff=False, **extra):
         username=username, email=f"{username}@example.com", password=PASSWORD, **extra)
     if staff:
         user.groups.add(Group.objects.get(name=STAFF_GROUP))
+        user.staff_restaurants.add(*Restaurant.objects.filter(name="Test Kitchen"))
     return user
 
 
 def make_test_data():
-    """Same demo data as before, now saved in the database.
+    """Orders and dishes in the database.
 
-    Orders: 101 Placed (2 pizzas + 1 burger = 6800), 102 Preparing, 103 Delivered, 104 Cancelled.
-    Dishes: 1 Pizza, 2 Burger, 3 Cola (not available).
+    Restaurant "Test Kitchen" (owner owner0): orders 101 Placed (2 pizzas + 1 burger = 6800),
+    102 Preparing, 103 Delivered, 104 Cancelled. Dishes: 1 Pizza, 2 Burger, 3 Cola (not available).
+    Restaurant "Other Place" (owner owner9): order 201, dish 9 Soup.
+    Staff users made by make_user(staff=True) work in "Test Kitchen" only.
     """
-    pizza = FoodItem.objects.create(pk=1, name="Pizza", price=2500, category="Main")
-    burger = FoodItem.objects.create(pk=2, name="Burger", price=1800, category="Main")
-    cola = FoodItem.objects.create(pk=3, name="Cola", price=600, category="Drinks", is_available=False)
+    owner = make_user("owner0", role="owner")
+    kitchen = Restaurant.objects.create(name="Test Kitchen", owner=owner, address="Almaty")
+    other = Restaurant.objects.create(name="Other Place", owner=make_user("owner9", role="owner"), address="Almaty")
+    pizza = FoodItem.objects.create(pk=1, restaurant=kitchen, name="Pizza", price=2500)
+    burger = FoodItem.objects.create(pk=2, restaurant=kitchen, name="Burger", price=1800)
+    cola = FoodItem.objects.create(pk=3, restaurant=kitchen, name="Cola", price=600, is_available=False)
+    soup = FoodItem.objects.create(pk=9, restaurant=other, name="Soup", price=1000)
     orders = [
-        (101, "Aigerim", "Placed", [(pizza, 2), (burger, 1)]),
-        (102, "Aidos", "Preparing", [(burger, 1)]),
-        (103, "Dana", "Delivered", [(pizza, 1)]),
-        (104, "Marat", "Cancelled", [(cola, 2)]),
+        (101, kitchen, "Aigerim", "Placed", [(pizza, 2), (burger, 1)]),
+        (102, kitchen, "Aidos", "Preparing", [(burger, 1)]),
+        (103, kitchen, "Dana", "Delivered", [(pizza, 1)]),
+        (104, kitchen, "Marat", "Cancelled", [(cola, 2)]),
+        (201, other, "Erlan", "Placed", [(soup, 1)]),
     ]
-    for number, (order_id, name, status, lines) in enumerate(orders, start=1):
+    for number, (order_id, restaurant, name, status, lines) in enumerate(orders, start=1):
         customer = Customer.objects.create(name=name, phone=f"+7700000000{number}", address="Almaty")
-        order = FoodOrder.objects.create(pk=order_id, customer=customer, status=status)
+        order = FoodOrder.objects.create(pk=order_id, customer=customer, restaurant=restaurant, status=status)
         for food, quantity in lines:
             OrderItem.objects.create(order=order, food_item=food, quantity=quantity, unit_price=food.price)
 
@@ -68,7 +77,7 @@ class StaffTests(TestCase):
 
     def test_unknown_filter_shows_all_orders(self):
         response = self.client.get(reverse("staff:orders"), {"status": "Nonsense"})
-        self.assertEqual(len(response.context["orders"]), 4)
+        self.assertEqual(len(response.context["orders"]), 4)  # only Test Kitchen orders
 
     def test_order_total_is_calculated_from_lines(self):
         response = self.client.get(reverse("staff:order_detail", args=[101]))
@@ -129,12 +138,33 @@ class StaffAccessTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(status_of(101), "Placed")
 
-    def test_staff_user_sees_orders_list(self):
+    def test_staff_user_sees_only_own_restaurant_orders(self):
         make_user("staff1", staff=True)
         self.client.login(username="staff1", password=PASSWORD)
         response = self.client.get(reverse("staff:orders"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context["orders"]), 4)
+        self.assertEqual([o["id"] for o in response.context["orders"]], [104, 103, 102, 101])
+
+    def test_staff_cannot_open_or_change_other_restaurant(self):
+        self.client.force_login(make_user("staff1", staff=True))
+        self.assertEqual(self.client.get(reverse("staff:order_detail", args=[201])).status_code, 404)
+        self.client.post(reverse("staff:change_status", args=[201]), {"status": "Preparing"})
+        self.assertEqual(status_of(201), "Placed")
+        self.assertEqual(self.client.post(reverse("staff:toggle_availability", args=[9])).status_code, 404)
+        menu = self.client.get(reverse("staff:menu"))
+        self.assertEqual({item.name for item in menu.context["items"]}, {"Pizza", "Burger", "Cola"})
+
+    def test_staff_without_restaurant_sees_nothing(self):
+        user = make_user("new_staff", staff=True)
+        user.staff_restaurants.clear()
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("staff:orders")).context["orders"], [])
+
+    def test_owner_sees_own_restaurant_admin_sees_all(self):
+        self.client.force_login(get_user_model().objects.get(username="owner9"))
+        self.assertEqual([o["id"] for o in self.client.get(reverse("staff:orders")).context["orders"]], [201])
+        self.client.force_login(make_user("boss", role="admin"))
+        self.assertEqual(len(self.client.get(reverse("staff:orders")).context["orders"]), 5)
 
     def test_normal_user_is_denied(self):
         make_user("customer1")

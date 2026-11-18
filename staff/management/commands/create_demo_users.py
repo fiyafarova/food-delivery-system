@@ -5,7 +5,8 @@
 | username       | who                         | how the role is stored               |
 |----------------|-----------------------------|--------------------------------------|
 | customer_demo  | customer (normal user)      | role = "customer"                    |
-| staff_demo     | employee (restaurant staff) | group "Restaurant staff"             |
+| staff_demo     | employee (restaurant staff) | group "Restaurant staff" + staff of  |
+|                |                             | owner_demo's restaurants (seed_demo) |
 | owner_demo     | manager (restaurant owner)  | role = "owner"                       |
 | admin_demo     | administrator               | role = "admin", superuser, /admin/   |
 
@@ -16,6 +17,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
+from restaurants.models import Restaurant
 from staff.permissions import STAFF_GROUP
 
 DEMO_USERS = [
@@ -49,5 +51,8 @@ class Command(BaseCommand):
                 user.groups.add(group)
             else:
                 user.groups.remove(group)
+            if in_staff_group:
+                # works in the demo restaurants (see core seed_demo)
+                user.staff_restaurants.add(*Restaurant.objects.filter(owner__username="owner_demo"))
             action = "created" if created else "updated"
             self.stdout.write(self.style.SUCCESS(f"{username:<14} {action}"))

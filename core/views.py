@@ -5,44 +5,49 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
 from django.db import transaction
-from django.db.models import Sum, F, DecimalField, ExpressionWrapper
 
-from .models import Customer, FoodItem, FoodOrder, OrderItem
+from customer import cart as shared_cart
+from restaurants.models import FoodItem
+
+from .models import Customer, FoodOrder, OrderItem
 
 
 # =========================
 # SHOPPING CART
 # =========================
+# There is ONE cart for the whole site: customer/cart.py (Dilnaz). It is stored in
+# the session as {"restaurant_id": ..., "items": {dish_id: quantity}} and only
+# allows dishes from one restaurant. These JSON endpoints use the same cart.
 
-def get_cart(request):
-    return request.session.get("cart", {})
+
+def cart_lines(request):
+    """Real dishes in the cart: list of (FoodItem, quantity). Demo dishes (negative ids) are skipped."""
+    items = shared_cart.read_session(request)["items"]
+    ids = [int(key) for key in items if key.lstrip("-").isdigit() and int(key) > 0]
+    dishes = FoodItem.objects.select_related("restaurant").in_bulk(ids)
+    return [(dishes[int(key)], int(qty)) for key, qty in items.items()
+            if key.lstrip("-").isdigit() and int(key) in dishes]
 
 
 @require_GET
 def view_cart(request):
-    cart = get_cart(request)
     items = []
     total = Decimal("0.00")
-
-    for food_id, quantity in cart.items():
-        food = FoodItem.objects.filter(
-            food_item_id=food_id,
-            is_available=True
-        ).first()
-
-        if food:
-            subtotal = food.price * quantity
-            total += subtotal
-
-            items.append({
-                "food_item_id": food.food_item_id,
-                "name": food.name,
-                "price": str(food.price),
-                "quantity": quantity,
-                "subtotal": str(subtotal),
-            })
+    for food, quantity in cart_lines(request):
+        if not food.is_available:
+            continue
+        subtotal = food.price * quantity
+        total += subtotal
+        items.append({
+            "food_item_id": food.pk,
+            "name": food.name,
+            "price": str(food.price),
+            "quantity": quantity,
+            "subtotal": str(subtotal),
+        })
 
     return JsonResponse({
+        "restaurant_id": shared_cart.read_session(request).get("restaurant_id"),
         "items": items,
         "total": str(total),
     })
@@ -54,90 +59,58 @@ def add_to_cart(request):
         data = json.loads(request.body)
         food_id = int(data.get("food_item_id"))
         quantity = int(data.get("quantity", 1))
-
-        if quantity <= 0:
-            return JsonResponse(
-                {"error": "Quantity must be greater than zero."},
-                status=400
-            )
-
-        food = get_object_or_404(
-            FoodItem,
-            food_item_id=food_id,
-            is_available=True
-        )
-
-        cart = get_cart(request)
-        current_quantity = cart.get(str(food_id), 0)
-        cart[str(food_id)] = current_quantity + quantity
-
-        request.session["cart"] = cart
-        request.session.modified = True
-
-        return JsonResponse({
-            "message": "Item added to cart.",
-            "food_item": food.name,
-            "quantity": cart[str(food_id)],
-        })
-
     except (ValueError, TypeError, json.JSONDecodeError):
         return JsonResponse({"error": "Invalid request data."}, status=400)
+
+    if quantity <= 0:
+        return JsonResponse({"error": "Quantity must be greater than zero."}, status=400)
+
+    food = get_object_or_404(FoodItem, pk=food_id, is_available=True)
+    status, info = shared_cart.add_dish(request, food.pk, replace=bool(data.get("replace")))
+    if status == "conflict":
+        # one order = one restaurant: send "replace": true to empty the cart and start again
+        return JsonResponse({
+            "error": "The cart already has dishes from another restaurant.",
+            **info,
+        }, status=409)
+
+    current = shared_cart.read_session(request)["items"].get(str(food.pk), 0)
+    shared_cart.set_quantity(request, food.pk, current - 1 + quantity)  # add_dish added 1
+
+    return JsonResponse({
+        "message": "Item added to cart.",
+        "food_item": food.name,
+        "quantity": shared_cart.read_session(request)["items"][str(food.pk)],
+    })
 
 
 @require_POST
 def update_cart(request):
     try:
         data = json.loads(request.body)
-        food_id = str(int(data.get("food_item_id")))
+        food_id = int(data.get("food_item_id"))
         quantity = int(data.get("quantity"))
-
-        if quantity <= 0:
-            return JsonResponse(
-                {"error": "Quantity must be greater than zero."},
-                status=400
-            )
-
-        cart = get_cart(request)
-
-        if food_id not in cart:
-            return JsonResponse(
-                {"error": "Item is not in the cart."},
-                status=404
-            )
-
-        cart[food_id] = quantity
-        request.session["cart"] = cart
-        request.session.modified = True
-
-        return JsonResponse({"message": "Cart updated."})
-
     except (ValueError, TypeError, json.JSONDecodeError):
         return JsonResponse({"error": "Invalid request data."}, status=400)
+
+    if quantity <= 0:
+        return JsonResponse({"error": "Quantity must be greater than zero."}, status=400)
+    if shared_cart.set_quantity(request, food_id, quantity) == "not_found":
+        return JsonResponse({"error": "Item is not in the cart."}, status=404)
+    return JsonResponse({"message": "Cart updated."})
 
 
 @require_POST
 def remove_from_cart(request):
     try:
         data = json.loads(request.body)
-        food_id = str(int(data.get("food_item_id")))
-
-        cart = get_cart(request)
-
-        if food_id not in cart:
-            return JsonResponse(
-                {"error": "Item is not in the cart."},
-                status=404
-            )
-
-        del cart[food_id]
-
-        request.session["cart"] = cart
-        request.session.modified = True
-
-        return JsonResponse({"message": "Item removed from cart."})
-
+        food_id = int(data.get("food_item_id"))
     except (ValueError, TypeError, json.JSONDecodeError):
         return JsonResponse({"error": "Invalid request data."}, status=400)
+
+    if shared_cart.set_quantity(request, food_id, 0) == "not_found":
+        return JsonResponse({"error": "Item is not in the cart."}, status=404)
+    return JsonResponse({"message": "Item removed from cart."})
 
 
 # =========================
@@ -149,65 +122,44 @@ def create_order(request):
     try:
         data = json.loads(request.body)
         customer_id = int(data.get("customer_id"))
-        cart = get_cart(request)
-
-        if not cart:
-            return JsonResponse(
-                {"error": "Your cart is empty."},
-                status=400
-            )
-
-        customer = get_object_or_404(
-            Customer,
-            customer_id=customer_id
-        )
-
-        with transaction.atomic():
-            order = FoodOrder.objects.create(
-                customer=customer,
-                status="Placed",
-                total_amount=Decimal("0.00")
-            )
-
-            total = Decimal("0.00")
-
-            for food_id, quantity in cart.items():
-                food = get_object_or_404(
-                    FoodItem,
-                    food_item_id=int(food_id),
-                    is_available=True
-                )
-
-                quantity = int(quantity)
-
-                if quantity <= 0:
-                    raise ValueError("Invalid quantity.")
-
-                unit_price = food.price
-                total += unit_price * quantity
-
-                OrderItem.objects.create(
-                    order=order,
-                    food_item=food,
-                    quantity=quantity,
-                    unit_price=unit_price
-                )
-
-            order.total_amount = total
-            order.save(update_fields=["total_amount"])
-
-        request.session["cart"] = {}
-        request.session.modified = True
-
-        return JsonResponse({
-            "message": "Order created successfully.",
-            "order_id": order.order_id,
-            "status": order.status,
-            "total_amount": str(order.total_amount),
-        }, status=201)
-
     except (ValueError, TypeError, json.JSONDecodeError):
         return JsonResponse({"error": "Invalid order data."}, status=400)
+
+    lines = cart_lines(request)
+    if not lines:
+        return JsonResponse({"error": "Your cart is empty."}, status=400)
+    if any(not food.is_available for food, _qty in lines):
+        return JsonResponse({"error": "Some dishes in the cart are not available."}, status=400)
+
+    restaurants = {food.restaurant_id for food, _qty in lines}
+    if len(restaurants) != 1:  # the cart never allows this, but check anyway
+        return JsonResponse({"error": "All dishes must be from one restaurant."}, status=400)
+
+    customer = get_object_or_404(Customer, customer_id=customer_id)
+
+    with transaction.atomic():
+        order = FoodOrder.objects.create(
+            customer=customer,
+            restaurant_id=restaurants.pop(),
+            status="Placed",
+            total_amount=Decimal("0.00"),
+        )
+        total = Decimal("0.00")
+        for food, quantity in lines:
+            total += food.price * quantity
+            OrderItem.objects.create(order=order, food_item=food, quantity=quantity, unit_price=food.price)
+        order.total_amount = total
+        order.save(update_fields=["total_amount"])
+
+    shared_cart.clear_cart(request)
+
+    return JsonResponse({
+        "message": "Order created successfully.",
+        "order_id": order.order_id,
+        "restaurant": order.restaurant.name,
+        "status": order.status,
+        "total_amount": str(order.total_amount),
+    }, status=201)
 
 
 # =========================
@@ -216,16 +168,12 @@ def create_order(request):
 
 @require_GET
 def order_details(request, order_id):
-    order = get_object_or_404(
-        FoodOrder,
-        order_id=order_id
-    )
+    order = get_object_or_404(FoodOrder.objects.select_related("restaurant"), order_id=order_id)
 
     items = []
-
-    for item in order.items.all():
+    for item in order.items.select_related("food_item"):
         items.append({
-            "food_item_id": item.food_item.food_item_id,
+            "food_item_id": item.food_item.pk,
             "food_name": item.food_item.name,
             "quantity": item.quantity,
             "unit_price": str(item.unit_price),
@@ -235,6 +183,8 @@ def order_details(request, order_id):
     return JsonResponse({
         "order_id": order.order_id,
         "customer_id": order.customer.customer_id,
+        "restaurant_id": order.restaurant_id,
+        "restaurant": order.restaurant.name,
         "order_date": order.order_date.isoformat(),
         "status": order.status,
         "total_amount": str(order.total_amount),
@@ -303,6 +253,7 @@ def order_history(request, customer_id):
     for order in orders:
         result.append({
             "order_id": order.order_id,
+            "restaurant": order.restaurant.name,
             "order_date": order.order_date.isoformat(),
             "status": order.status,
             "total_amount": str(order.total_amount),

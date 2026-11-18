@@ -20,10 +20,11 @@ pip install -r requirements.txt
 # 3. Create the tables (schema "food_delivery") and the group "Restaurant staff"
 python manage.py migrate
 
-# 4. Demo data: 4 customers, 10 dishes, 4 orders (core/fixtures/demo_data.json)
-python manage.py loaddata demo_data
+# 4. Demo data: 3 restaurants, 11 dishes, 4 customers, 4 orders (safe to run again)
+python manage.py seed_demo
 
 # 5. Demo accounts for every role (choose any password, min. 8 characters)
+#    staff_demo becomes staff of the demo restaurants, owner_demo owns them
 python manage.py create_demo_users --password <choose-a-password>
 
 # 6. Start the server
@@ -54,6 +55,16 @@ Run the tests: `python manage.py test`
 | http://127.0.0.1:8000/admin/ | Django admin (users, roles, data) | admin only |
 | http://127.0.0.1:8000/api/ | REST API: accounts, restaurants (see below) | depends on the endpoint |
 | http://127.0.0.1:8000/core/ | JSON API: cart, orders, payments, delivery (`core/urls.py`) | everyone (no login yet) |
+
+## Restaurants, dishes and orders
+
+- Dishes live in **`restaurants.FoodItem`** (one table for the customer menu, cart, orders and staff pages).
+- **One order = one restaurant.** The cart only accepts dishes from one restaurant: adding a dish from
+  another restaurant asks to replace the cart (HTTP 409 in the API, `"replace": true` to confirm).
+  `FoodOrder.restaurant` stores the restaurant; an order line with a dish from another restaurant is rejected.
+- There is one cart for the site (`customer/cart.py`); the `/core/cart/...` API uses the same cart.
+- **Staff see only their restaurants:** employees see restaurants where they are in *Restaurant → staff*
+  (set in `/admin/`), owners see their own restaurants, admins see all.
 
 ## Users, roles and passwords
 
@@ -95,8 +106,8 @@ Other endpoints: `/api/auth/token/refresh/`, `/api/auth/change-password/`, `/api
 
 | Folder | What it contains | Owner   |
 |---|---|---------|
-| `core/` | Order models (Customer, FoodItem, FoodOrder, OrderItem, Payment, Delivery) + JSON API | Aksunkar, Darya |
-| `accounts/`, `restaurants/` | Custom User, registration/JWT, restaurants and search REST API | Sayazhan |
+| `core/` | Order models (Customer, FoodOrder, OrderItem, Payment, Delivery) + JSON API, `seed_demo` | Aksunkar, Darya |
+| `accounts/`, `restaurants/` | Custom User, registration/JWT; Restaurant, Category, **FoodItem (the only dish table)**, search API | Sayazhan |
 | `database/` | SQL: schema, total trigger, `order_summary` view, PostgreSQL roles | Darya |
 | `customer/` | Client pages: menu, cart, checkout, order status | Dilnaz  |
 | `staff/` | Staff pages: orders, order details, menu availability | Sofiya  |

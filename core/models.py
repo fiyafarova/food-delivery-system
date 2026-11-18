@@ -3,6 +3,7 @@
 Merged version agreed by the team:
 - fields, Payment and Delivery: Aksunkar (branch back-1)
 - class names, table names and CHECK rules: Darya (branch database-sql, database/*.sql)
+- dishes come from restaurants.FoodItem (Sayazhan); one order = one restaurant
 
 Rules kept from Task 9:
 - foreign keys use on_delete=PROTECT (ON DELETE RESTRICT in SQL)
@@ -17,6 +18,7 @@ database/food_delivery_database.sql, so Darya's SQL (trigger, views, roles)
 works on the same tables.
 """
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Now
@@ -36,23 +38,6 @@ class Customer(models.Model):
         return self.name
 
 
-class FoodItem(models.Model):
-    food_item_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.CharField(max_length=50)
-    is_available = models.BooleanField(default=True, db_default=True)
-
-    class Meta:
-        db_table = "food_item"
-        constraints = [
-            models.CheckConstraint(condition=Q(price__gt=0), name="food_item_price_positive"),
-        ]
-
-    def __str__(self):
-        return self.name
-
-
 class FoodOrder(models.Model):
     class Status(models.TextChoices):
         PLACED = "Placed"
@@ -65,6 +50,14 @@ class FoodOrder(models.Model):
         Customer,
         on_delete=models.PROTECT,
         db_column="customer_id",
+        related_name="orders",
+    )
+    # One order = one restaurant (same rule as the cart). All dishes of the order
+    # must belong to this restaurant, see OrderItem.clean().
+    restaurant = models.ForeignKey(
+        "restaurants.Restaurant",
+        on_delete=models.PROTECT,
+        db_column="restaurant_id",
         related_name="orders",
     )
     order_date = models.DateTimeField(default=timezone.now, db_default=Now())
@@ -96,7 +89,7 @@ class OrderItem(models.Model):
         related_name="items",
     )
     food_item = models.ForeignKey(
-        FoodItem,
+        "restaurants.FoodItem",
         on_delete=models.PROTECT,
         db_column="food_item_id",
         related_name="order_items",
@@ -111,6 +104,14 @@ class OrderItem(models.Model):
             models.CheckConstraint(condition=Q(quantity__gt=0), name="order_item_quantity_positive"),
             models.CheckConstraint(condition=Q(unit_price__gte=0), name="order_item_unit_price_not_negative"),
         ]
+
+    def clean(self):
+        if self.food_item.restaurant_id != self.order.restaurant_id:
+            raise ValidationError("All dishes of an order must be from the order's restaurant.")
+
+    def save(self, *args, **kwargs):
+        self.clean()  # the one-restaurant rule is checked on every save, not only in forms
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.food_item.name} x {self.quantity}"
