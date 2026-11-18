@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import views
+from . import account_views, views
 
 app_name = "staff"
 
@@ -12,6 +12,10 @@ urlpatterns = [
         next_page="staff:orders",  # used when there is no ?next=
     ), name="login"),
     path("logout/", auth_views.LogoutView.as_view(next_page="staff:login"), name="logout"),  # POST only
+    path("password/", account_views.ChangePasswordView.as_view(), name="password_change"),
+    path("team/", account_views.team, name="team"),
+    path("team/<int:restaurant_id>/remove/<int:user_id>/", account_views.team_remove, name="team_remove"),
+    path("managers/", account_views.managers, name="managers"),
     path("orders/", views.orders, name="orders"),
     path("orders/<int:order_id>/", views.order_detail, name="order_detail"),
     path("orders/<int:order_id>/status/", views.change_status, name="change_status"),
