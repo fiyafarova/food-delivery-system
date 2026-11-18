@@ -4,12 +4,82 @@
     min-height: 60vh;
 }
 
+.bb-fav-page .bb-fav-header {
+    margin-bottom: clamp(1.25rem, 3vw, 2rem);
+    padding-bottom: .875rem;
+    border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-fav-page .bb-fav-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: .9375rem;
+}
+
+.bb-fav-page .bb-fav-title {
+    margin: .25rem 0 0;
+    color: var(--bb-orange-dark);
+    font-size: clamp(1.75rem, 3.25vw, 2.625rem);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -.045em;
+}
+
 .bb-fav-page .bb-card {
     background: #fff;
     border: 1px solid var(--bb-border);
     border-radius: 20px;
-    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-shadow: 0 8px 24px rgba(var(--bb-accent-rgb), 0.06);
+}
+
+.bb-fav-page .bb-fav-photo {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    object-fit: cover;
+    background: var(--bb-peach);
+}
+
+.bb-fav-page .bb-fav-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: .625rem;
+    padding: 1rem 1.125rem;
+    overflow-wrap: anywhere;
+}
+
+.bb-fav-page .bb-fav-category {
+    margin: 0;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--bb-orange-dark);
+}
+
+.bb-fav-page .bb-fav-description {
+    white-space: pre-line;
+}
+
+.bb-fav-page .bb-fav-delivery {
+    padding: .5rem .75rem;
+    border-radius: .625rem;
+    background: var(--bb-peach);
+    color: var(--bb-text);
+    font-size: .875rem;
+}
+
+.bb-fav-page .bb-fav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-top: auto;
+    padding-top: .375rem;
 }
 
 .bb-fav-page .bb-muted {
@@ -34,7 +104,8 @@
 
 .bb-fav-page .bb-price {
     color: var(--bb-orange-dark);
-    font-weight: 700;
+    font-size: 1.25rem;
+    font-weight: 750;
 }
 
 .bb-fav-page .btn-bb {

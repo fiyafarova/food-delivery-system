@@ -1,310 +1,695 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n l10n %}
 
 {% block title %}{% trans "Home" %} — BiteBox{% endblock %}
 
 {% block content %}
+{% trans "Added ✓" as cart_added_label %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
 <link rel="stylesheet" href="{% static 'css/favorites.css' %}">
 
 <style>
   .home {
+    --bb-display: "Bricolage Grotesque", var(--bs-body-font-family, system-ui), "Segoe UI", sans-serif;
     color: var(--bb-text);
+    overflow-wrap: anywhere;
   }
 
-  .banner {
-    background: #eeeeee;
-    border-radius: 20px;
-    padding: 40px;
-    margin-bottom: 30px;
+  .home .banner {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--bb-border);
+    border-radius: 1.5rem;
+    background: var(--bb-peach);
   }
 
-  .banner h1 {
-    font-size: 38px;
-    font-weight: bold;
+  .home .banner-intro {
+    grid-area: 1 / 1;
+    z-index: 1;
+    padding: clamp(1.25rem, 4vw, 3.5rem);
   }
 
-  .banner p {
+  .home .banner-photo {
+    min-height: 12rem;
+    background: var(--bb-peach) url("{% static 'images/bitebox-hero.jpg' %}") right center / cover no-repeat;
+  }
+
+  .home .banner-location {
+    margin-bottom: .875rem;
+    color: var(--bb-orange-dark);
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+  }
+
+  .home .banner h1 {
+    margin: 0;
+    font-size: clamp(1.875rem, 3.4vw, 3.25rem);
+    font-weight: 750;
+    letter-spacing: -.045em;
+    line-height: 1.03;
+    text-wrap: balance;
+  }
+
+  .home .banner-description {
+    max-width: 34ch;
+    margin: .75rem 0 1rem;
     color: var(--bb-muted);
-    margin: 15px 0 25px;
   }
 
-  .categories {
+  .home .banner-action,
+  .home .category {
+    min-height: 44px;
+    border: 1px solid var(--bb-border);
+    border-radius: 999px;
+    padding: .625rem 1rem;
+    font-weight: 600;
+  }
+
+  .home .category {
+    background: var(--bb-bg);
+    color: var(--bb-text);
+    white-space: nowrap;
+  }
+
+  .home .banner-action,
+  .home .category.active {
+    background: var(--bb-orange);
+    border-color: var(--bb-orange);
+    color: #fff;
+  }
+
+  .home .banner-action:hover,
+  .home .category.active:hover {
+    background: var(--bb-orange-dark);
+    border-color: var(--bb-orange-dark);
+    color: #fff;
+  }
+
+  .home .discovery {
+    margin-block: clamp(1.75rem, 4vw, 3rem) 1rem;
+    scroll-margin-top: 1rem;
+  }
+
+  .home .discovery-heading {
+    margin-bottom: 1rem;
+    font-family: var(--bb-display);
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -.035em;
+  }
+
+  .home .discovery-filters {
+    display: flex;
+    flex-direction: column;
+    gap: .625rem;
+    margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+    --bb-filter-gutter: clamp(.875rem, 1.8vw, 1.25rem);
+    padding: .75rem var(--bb-filter-gutter);
+    border: 1px solid var(--bb-border);
+    border-radius: 1.5rem;
+    background: var(--bb-peach);
+  }
+
+  .home .discovery-search-field {
+    position: relative;
+  }
+
+  .home .discovery-search-field svg {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 1rem;
+    margin-block: auto;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    color: var(--bb-orange-dark);
+    pointer-events: none;
+  }
+
+  .home .discovery-search input {
+    min-height: 44px;
+    padding-inline: 3rem 1rem;
+    border-color: var(--bb-border);
+    border-radius: 999px;
+    background-color: #fff;
+    color: var(--bb-text);
+    font-size: 1rem;
+  }
+
+  .home .discovery-search input::placeholder {
+    color: var(--bb-muted);
+    opacity: 1;
+  }
+
+  .home .discovery-search input:focus {
+    border-color: var(--bb-orange);
+    box-shadow: 0 0 0 .2rem rgba(var(--bb-accent-rgb), .15);
+  }
+
+  .home .categories {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin: 20px 0 30px;
+    gap: .5rem;
   }
 
-  .category {
-    background: #f1f1f1;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    padding: 12px 20px;
-    cursor: pointer;
+  .home .category:not(.active):hover {
+    background: #fff;
+    border-color: var(--bb-orange);
   }
 
-  .category.active {
-    background: #343a40;
-    color: white;
+  .home .restaurant-column[hidden] {
+    display: none;
   }
 
-  .restaurant {
-    border: 1px solid #ddd;
-    border-radius: 16px;
-    overflow: hidden;
-    height: 100%;
-  }
-
-  .restaurant-cover {
-    background: #eeeeee;
-    padding: 40px 15px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-  }
-
-  .restaurant-info {
-    padding: 20px;
-  }
-
-  .restaurant-info h3 {
-    font-size: 22px;
-  }
-
-  .restaurant-info p {
-    color: var(--bb-muted);
-    font-size: 14px;
-  }
-
-  .restaurant-info summary {
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: 15px;
-  }
-
-  .restaurant-info ul {
-    padding-left: 20px;
-    margin-top: 15px;
-    font-size: 14px;
-  }
-
-  @media (max-width: 576px) {
-    .banner {
-      padding: 25px;
-    }
-
-    .banner h1 {
-      font-size: 29px;
-    }
-  }
-  .home {
-  --bitebox-orange: #bd4900;
-  --bitebox-orange-hover: #963900;
-  --bitebox-peach: #fff1e6;
-  --bitebox-border: #f0d4bf;
-}
-
-.home .banner,
-.home .restaurant-cover {
-  background: var(--bb-peach);
-}
-
-.home .restaurant,
-.home .category {
-  border-color: var(--bb-border);
-}
-
-.home .category {
-  background: var(--bb-bg);
-}
-
-.home .banner .btn-dark,
-.home .category.active {
-  background: var(--bb-orange);
-  border-color: var(--bb-orange);
-  color: white;
-}
-
-.home .banner .btn-dark:hover,
-.home .category.active:hover {
-  background: var(--bb-orange-dark);
-  border-color: var(--bb-orange-dark);
-}
-
-.home .restaurant-info summary {
-  color: var(--bb-orange);
-}
-
-  .banner-grid { display: grid; gap: 1.5rem; align-items: center; }
-  @media (min-width: 768px) {
-    .banner-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
-  }
-
-  .banner-promos { min-width: 0; overflow: hidden; border-radius: 16px; }
-  .banner-promos .carousel-item {
+  .home .restaurant {
     position: relative;
-    aspect-ratio: 2 / 1;
-    min-height: 185px;
-    background-color: var(--bb-orange-dark);
-    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--bb-border);
+    border-radius: 1.25rem;
+    background: #fff;
+  }
+
+  .home .restaurant:hover,
+  .home .restaurant:focus-within {
+    border-color: var(--bb-orange);
+    box-shadow: 0 .5rem 1.5rem rgba(var(--bb-accent-rgb), .14);
+  }
+
+  .home .restaurant-photo {
+    aspect-ratio: 16 / 10;
+    background-color: var(--bb-orange);
+    background-image: var(--restaurant-photo, linear-gradient(135deg, var(--bb-orange), var(--bb-orange-dark)));
     background-position: center;
+    background-size: cover;
     background-repeat: no-repeat;
   }
-  .banner-promos .promo-pizza {
-    background-image: url("{% static 'images/promo-pizza.jpg' %}");
+
+  .home .photo-pizza, #restaurant-menu .photo-pizza { --restaurant-photo: url("{% static 'images/promo-pizza.jpg' %}"); }
+  .home .photo-burger, #restaurant-menu .photo-burger { --restaurant-photo: url("{% static 'images/promo-burger.jpeg' %}"); }
+  .home .photo-sushi, #restaurant-menu .photo-sushi { --restaurant-photo: url("{% static 'images/promo-sushi.jpg' %}"); }
+
+  .home .restaurant-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 1.125rem clamp(1rem, 2vw, 1.375rem) 1.25rem;
   }
-  .banner-promos .promo-burger {
-    background-image: url("{% static 'images/promo-burger.jpeg' %}");
+
+  .home .restaurant-info h3 {
+    margin-bottom: .25rem;
+    font-family: var(--bb-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.1;
   }
-  .banner-promos .promo-sushi {
-    background-image: url("{% static 'images/promo-sushi.jpg' %}");
+
+  .home .restaurant-info p {
+    margin-bottom: .375rem;
+    color: var(--bb-muted);
+    font-size: .9375rem;
+    line-height: 1.45;
   }
-  .banner-promos .promo-copy {
-    position: absolute;
-    inset: 0;
+
+  .home .restaurant-info .restaurant-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem .5rem;
+    margin-top: .375rem;
+    color: var(--bb-text);
+    font-size: .875rem;
+    font-weight: 600;
+  }
+
+  .home .restaurant-meta span {
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    background: var(--bb-peach);
+  }
+
+  .home .restaurant-info .restaurant-matches {
+    margin: .625rem 0 0;
+    padding-top: .625rem;
+    border-top: 1px dashed var(--bb-border);
+    font-size: .875rem;
+  }
+
+  .home .restaurant-info summary,
+  .home .restaurant-info > .restaurant-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    color: var(--bb-orange-dark);
+    font-weight: 700;
+  }
+
+  .home .restaurant-info > .restaurant-link::after {
+    content: "";
+    inline-size: .45rem;
+    block-size: .45rem;
+    border-block-start: 2px solid currentColor;
+    border-inline-end: 2px solid currentColor;
+    transform: rotate(45deg);
+  }
+
+  .home .restaurant-info details[hidden] { display: none; }
+
+  .home .restaurant-title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .home .restaurant-title-link:hover {
+    color: var(--bb-orange-dark);
+  }
+
+  .home :focus-visible,
+  .home .restaurant-title-link:focus-visible::after {
+    outline: 2px solid var(--bb-orange-dark);
+    outline-offset: 3px;
+  }
+
+  .home .restaurant-title-link:focus-visible::after {
+    border-radius: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .home .banner {
+      min-height: clamp(21rem, 37vw, 32rem);
+      align-items: center;
+    }
+
+    .home .banner-intro {
+      max-width: 48%;
+    }
+
+    .home .banner-photo {
+      grid-area: 1 / 1;
+      align-self: stretch;
+      background-image: linear-gradient(90deg, var(--bb-peach), transparent 52%),
+        url("{% static 'images/bitebox-hero.jpg' %}");
+    }
+
+    .home .discovery-filters {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(15rem, .85fr);
+      align-items: center;
+      column-gap: 1rem;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .home .banner-photo {
+      aspect-ratio: 16 / 9;
+      background-size: auto 115%;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .home .banner-action { width: 100%; }
+
+    .home .categories {
+      flex-wrap: nowrap;
+      margin-inline: calc(-1 * var(--bb-filter-gutter));
+      padding: .125rem var(--bb-filter-gutter);
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
+    }
+
+    .home .categories::-webkit-scrollbar { display: none; }
+    .home .category { scroll-snap-align: start; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .home .restaurant {
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+  }
+
+  .restaurant-link {
+    color: inherit;
+    text-decoration-color: var(--bb-orange);
+    text-underline-offset: .2em;
+  }
+
+  .restaurant-menu-header {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 1.25rem 14% 1.25rem 3%;
+    gap: .5rem;
+    min-height: clamp(13rem, 32vw, 24rem);
+    padding: clamp(1.25rem, 4vw, 3rem);
+    border-radius: 1.25rem;
+    background: linear-gradient(0deg, rgba(43, 26, 20, .9), rgba(43, 26, 20, .16) 85%),
+      var(--restaurant-photo, url("{% static 'images/bitebox-hero.jpg' %}")) right center / cover no-repeat;
+    background-color: var(--bb-orange-dark);
     color: #fff;
-    background: linear-gradient(transparent 25%, rgba(40, 21, 14, .92));
+    overflow-wrap: anywhere;
   }
-  .banner-promos .promo-copy small { color: #ffe1ca; }
-  .banner-promos .carousel-control-prev,
-  .banner-promos .carousel-control-next {
-    width: 13%;
+
+  .restaurant-menu-header h1 {
+    font-family: "Bricolage Grotesque", var(--bs-body-font-family, system-ui), sans-serif;
+    font-weight: 800;
+    letter-spacing: -.04em;
+  }
+
+  .restaurant-menu-dishes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 1rem;
+  }
+
+  .restaurant-menu-filters:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .restaurant-menu-filters > div {
+    flex: 1 1 12rem;
+  }
+
+  .restaurant-menu-filters .form-control,
+  .restaurant-menu-filters .form-select {
+    border-color: var(--bb-border);
+  }
+
+  .restaurant-menu-search-field {
+    position: relative;
+  }
+
+  .restaurant-menu-search-field svg {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 1rem;
+    margin-block: auto;
+    width: 1.125rem;
+    height: 1.125rem;
+    color: var(--bb-orange-dark);
+    pointer-events: none;
+  }
+
+  .restaurant-menu-search-field input {
+    min-height: 44px;
+    padding-inline-start: 2.75rem;
+    border-radius: 999px;
+  }
+
+  .restaurant-menu-search-field input::placeholder {
+    color: var(--bb-muted);
     opacity: 1;
   }
-  .banner-promos .promo-arrow {
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    background: rgba(40, 21, 14, .8);
-    font-size: 1.2rem;
+
+  .restaurant-menu-filters :focus {
+    border-color: var(--bb-orange);
+    box-shadow: 0 0 0 .2rem rgba(var(--bb-accent-rgb), .15);
+  }
+
+  .restaurant-menu-dishes > li[hidden] {
+    display: none;
+  }
+
+  .restaurant-menu-dishes > li {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .75rem;
+    padding: 1rem !important;
+    background: #fff;
+    border: 1px solid var(--bb-border, #e7d0c0) !important;
+    border-radius: 1rem;
+  }
+
+  .restaurant-menu-dishes .restaurant-dish-actions {
+    align-items: center;
+    margin-top: auto;
+  }
+
+  .restaurant-menu-dishes .restaurant-dish-actions .btn,
+  .restaurant-menu-dishes .restaurant-dish-actions .bb-heart {
+    min-height: 44px;
+    border-radius: .75rem;
+  }
+
+  .restaurant-menu-dishes .restaurant-dish-actions .btn {
+    padding-inline: .625rem;
+    font-weight: 600;
+  }
+
+  .restaurant-menu-dishes .js-add-to-cart {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bb-orange);
+    --bs-btn-border-color: var(--bb-orange);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--bb-orange-dark);
+    --bs-btn-hover-border-color: var(--bb-orange-dark);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--bb-orange-dark);
+    --bs-btn-active-border-color: var(--bb-orange-dark);
+  }
+
+  .restaurant-menu-dishes .js-remove-from-cart {
+    --bs-btn-color: var(--bb-orange-dark);
+    --bs-btn-bg: var(--bb-bg);
+    --bs-btn-border-color: var(--bb-border);
+    --bs-btn-hover-color: var(--bb-orange-dark);
+    --bs-btn-hover-bg: var(--bb-peach);
+    --bs-btn-hover-border-color: var(--bb-orange);
+    --bs-btn-active-color: var(--bb-orange-dark);
+    --bs-btn-active-bg: var(--bb-peach);
+    --bs-btn-active-border-color: var(--bb-orange);
+  }
+
+  .restaurant-menu-dishes .restaurant-dish-actions .bb-heart {
+    flex-basis: 44px;
+    width: 44px;
+    margin-inline-start: auto;
+  }
+
+  .restaurant-menu-dishes .restaurant-dish-actions button:focus-visible {
+    outline: 2px solid var(--bb-orange-dark);
+    outline-offset: 2px;
+  }
+
+  .restaurant-menu-photo {
+    display: none;
+  }
+
+  .restaurant-menu-dishes .restaurant-menu-photo {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: .75rem;
+    background: var(--bb-peach) var(--restaurant-photo, url("{% static 'images/bitebox-hero.jpg' %}")) right center / cover no-repeat;
   }
 </style>
 
 <div class="home">
 
-  <section class="banner banner-grid">
-    <div>
-      <p>{% trans "BITEBOX · ALMATY" %}</p>
+  <section class="banner">
+    <div class="banner-intro">
+      <p class="banner-location">{% trans "BITEBOX · ALMATY" %}</p>
 
       <h1>
         {% trans "Your favorite dishes." %}<br>
         {% trans "From restaurants nearby." %}
       </h1>
 
-      <p>{% trans "Choose a restaurant and find something delicious." %}</p>
+      <p class="banner-description">{% trans "Choose a restaurant and find something delicious." %}</p>
 
-      <a href="#restaurants" class="btn btn-dark">
+      <a href="#restaurants" class="btn banner-action">
         {% trans "Choose a restaurant" %}
       </a>
     </div>
-    <div>
-      <div id="bitebox-promos" class="carousel slide banner-promos" data-bs-ride="carousel" data-bs-interval="5000"
-           aria-label="{% trans "BiteBox sample promotions" %}">
-        <div class="carousel-inner">
-          <div class="carousel-item promo-pizza active">
-            <div class="promo-copy">
-              <small>{% trans "Sample promotion" %}</small>
-              <h2 class="h5 mb-1">{% trans "Pizza night" %}</h2>
-              <span>{% trans "15% off with code PIZZA15" %}</span>
-            </div>
-          </div>
-          <div class="carousel-item promo-burger">
-            <div class="promo-copy">
-              <small>{% trans "Sample promotion" %}</small>
-              <h2 class="h5 mb-1">{% trans "Burger and fries" %}</h2>
-              <span>{% trans "Combo at a special price" %}</span>
-            </div>
-          </div>
-          <div class="carousel-item promo-sushi">
-            <div class="promo-copy">
-              <small>{% trans "Sample promotion" %}</small>
-              <h2 class="h5 mb-1">{% trans "Sushi rolls for two" %}</h2>
-              <span>{% trans "10% off with code ROLLS10" %}</span>
-            </div>
-          </div>
+    <div class="banner-photo" aria-hidden="true"></div>
+  </section>
+
+  <section class="discovery" id="restaurants">
+    {% get_current_language as home_language %}
+    <h2 class="discovery-heading">{% trans "What are you craving today?" %}</h2>
+    <div class="discovery-filters">
+      <div class="categories" aria-label="{% trans "Restaurant categories" %}">
+        {% if restaurants %}
+          <button type="button" class="category active" data-category="" aria-pressed="true">
+            {% trans "All" %}
+          </button>
+          {% for cuisine in cuisines %}
+            <button type="button" class="category" data-category="{{ cuisine }}" aria-pressed="false">
+              {{ cuisine }}
+            </button>
+          {% endfor %}
+        {% else %}
+        <button type="button" class="category active"
+                data-category="all" aria-pressed="true">
+          {% trans "All" %}
+        </button>
+
+        <button type="button" class="category"
+                data-category="pizza" aria-pressed="false">
+          {% trans "Pizza" %}
+        </button>
+
+        <button type="button" class="category"
+                data-category="burger" aria-pressed="false">
+          {% trans "Burgers" %}
+        </button>
+
+        <button type="button" class="category"
+                data-category="sushi" aria-pressed="false">
+          {% trans "Sushi" %}
+        </button>
+        {% endif %}
+      </div>
+
+      <div class="discovery-search">
+        <label for="discovery-search" class="visually-hidden">
+          {% if home_language == "ru" %}Поиск блюда или ресторана{% else %}Search for a dish or restaurant{% endif %}
+        </label>
+        <div class="discovery-search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-3.5-3.5"></path>
+          </svg>
+          <input class="form-control" type="search" id="discovery-search" aria-controls="restaurant-results"
+                 placeholder="{% if home_language == 'ru' %}Поиск блюда или ресторана{% else %}Search for a dish or restaurant{% endif %}">
         </div>
-        <button class="carousel-control-prev" type="button"
-                data-bs-target="#bitebox-promos" data-bs-slide="prev">
-          <span class="promo-arrow" aria-hidden="true">‹</span>
-          <span class="visually-hidden">{% trans "Previous promotion" %}</span>
-        </button>
-        <button class="carousel-control-next" type="button"
-                data-bs-target="#bitebox-promos" data-bs-slide="next">
-          <span class="promo-arrow" aria-hidden="true">›</span>
-          <span class="visually-hidden">{% trans "Next promotion" %}</span>
-        </button>
       </div>
     </div>
-  </section>
 
-  <h2 class="h4">{% trans "What are you craving today?" %}</h2>
+    <h2 class="discovery-heading">{% trans "Restaurants nearby" %}</h2>
+    <p class="text-muted" id="discovery-no-results" role="status" hidden>
+      {% if home_language == "ru" %}Блюда и рестораны не найдены.{% else %}No dishes or restaurants found.{% endif %}
+    </p>
 
-  <div class="categories" aria-label="{% trans "Restaurant categories" %}">
-    <button type="button" class="category active"
-            data-category="all" aria-pressed="true">
-      {% trans "All" %}
-    </button>
+    <div class="row g-4" id="restaurant-results">
 
-    <button type="button" class="category"
-            data-category="pizza" aria-pressed="false">
-      {% trans "Pizza" %}
-    </button>
-
-    <button type="button" class="category"
-            data-category="burger" aria-pressed="false">
-      {% trans "Burgers" %}
-    </button>
-
-    <button type="button" class="category"
-            data-category="sushi" aria-pressed="false">
-      {% trans "Sushi" %}
-    </button>
-  </div>
-
-  <section id="restaurants">
-    <h2 class="h4 mb-4">{% trans "Restaurants nearby" %}</h2>
-
-    <div class="row g-4">
-
-      <div class="col-md-4 restaurant-column" data-category="burger">
+      {% for restaurant in restaurants %}
+        {% with c=restaurant.cuisine|default:""|lower %}
+        <div class="col-sm-6 col-lg-4 restaurant-column" data-category="{{ restaurant.cuisine }}">
+          <article class="restaurant">
+            <div class="restaurant-photo{% if 'pizza' in c or 'пицц' in c or 'italian' in c or 'итальян' in c %} photo-pizza{% elif 'burger' in c or 'бургер' in c or 'american' in c or 'америк' in c %} photo-burger{% elif 'sushi' in c or 'суши' in c or 'roll' in c or 'ролл' in c or 'japan' in c or 'япон' in c %} photo-sushi{% endif %}" aria-hidden="true"></div>
+            <div class="restaurant-info">
+              <h3><a class="restaurant-title-link stretched-link" data-restaurant-key="restaurant-{{ restaurant.pk|unlocalize }}" href="?restaurant=restaurant-{{ restaurant.pk|unlocalize }}">{{ restaurant.name }}</a></h3>
+              {% if restaurant.cuisine %}<p>{{ restaurant.cuisine }}</p>{% endif %}
+              <details>
+                <summary>{% trans "View menu" %}</summary>
+                <ul class="list-unstyled">
+                  {% for dish in restaurant.food_items.all %}
+                    <li class="py-2 border-bottom" data-menu-cart-dish="{{ dish.pk|unlocalize }}" data-menu-category="{{ dish.category.name|default_if_none:'' }}">
+                      <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                      <span><span data-menu-dish-name>{{ dish.name }}</span> — {{ dish.price|floatformat:2 }} ₸</span>
+                      <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                        {% if dish.is_available %}
+                          <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                                  data-url="{% url 'customer:cart_add' %}" data-dish-id="{{ dish.pk|unlocalize }}">
+                            {% if dish.pk in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                          </button>
+                        {% else %}
+                          <span class="text-muted">{% trans "Unavailable" %}</span>
+                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                                data-url="{% url 'customer:cart_remove' %}" data-dish-id="{{ dish.pk|unlocalize }}"
+                                {% if dish.pk not in cart_dish_ids %}hidden{% endif %}>
+                          {% trans "Remove" %}
+                        </button>
+                        <button type="button" class="bb-heart js-fav"
+                                data-fav-id="food-{{ dish.pk|unlocalize }}"
+                                data-restaurant-key="restaurant-{{ restaurant.pk|unlocalize }}"
+                                data-description="{{ dish.description }}"
+                                data-name="{{ dish.name }}" data-restaurant="{{ restaurant.name }}"
+                                data-price="{{ dish.price|unlocalize }}"
+                                aria-pressed="false" aria-label="{% trans 'Add to favorites' %}"></button>
+                      </div>
+                    </li>
+                  {% empty %}
+                    <li class="text-muted">{% trans "No dishes yet." %}</li>
+                  {% endfor %}
+                </ul>
+              </details>
+            </div>
+          </article>
+        </div>
+        {% endwith %}
+      {% empty %}
+      <div class="col-sm-6 col-lg-4 restaurant-column" data-category="burger">
         <article class="restaurant">
-          <div class="restaurant-cover">Urban Burger</div>
-
+          <div class="restaurant-photo photo-burger" aria-hidden="true"></div>
           <div class="restaurant-info">
-            <h3>Urban Burger</h3>
+            <h3><a class="restaurant-title-link stretched-link" data-restaurant-key="urban-burger" href="?restaurant=urban-burger">Urban Burger</a></h3>
             <p>{% trans "Burgers · American cuisine" %}</p>
-            <p>{% trans "Rating: 4.8 · 20–30 min" %}</p>
-            <p>{% trans "Delivery: 400 ₸" %}</p>
+            <p class="restaurant-meta">
+              <span>{% trans "Rating: 4.8 · 20–30 min" %}</span>
+              <span>{% trans "Delivery: 400 ₸" %}</span>
+            </p>
 
             <details>
               <summary>{% trans "View menu" %}</summary>
               <ul class="list-unstyled">
-                <li class="bb-menu-dish">
-                  <span>{% trans "Cheeseburger" %} — 1 800 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="urban-burger-1" data-name="Чизбургер"
-                          data-restaurant="Urban Burger" data-price="1800"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Burgers' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Cheeseburger" %}</span> — 1 800 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-1">
+                      {% if -1 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-1"
+                            {% if -1 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="urban-burger-1" data-name="Чизбургер"
+                            data-restaurant="Urban Burger" data-price="1800"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
-                <li class="bb-menu-dish">
-                  <span>{% trans "French fries" %} — 900 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="urban-burger-2" data-name="Картофель фри"
-                          data-restaurant="Urban Burger" data-price="900"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Snacks' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "French fries" %}</span> — 900 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-2">
+                      {% if -2 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-2"
+                            {% if -2 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="urban-burger-2" data-name="Картофель фри"
+                            data-restaurant="Urban Burger" data-price="900"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
-                <li class="bb-menu-dish">
-                  <span>{% trans "Lemonade" %} — 700 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="urban-burger-3" data-name="Лимонад"
-                          data-restaurant="Urban Burger" data-price="700"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Drinks' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Lemonade" %}</span> — 700 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-3">
+                      {% if -3 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-3"
+                            {% if -3 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="urban-burger-3" data-name="Лимонад"
+                            data-restaurant="Urban Burger" data-price="700"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
               </ul>
             </details>
@@ -312,39 +697,76 @@
         </article>
       </div>
 
-      <div class="col-md-4 restaurant-column" data-category="pizza">
+      <div class="col-sm-6 col-lg-4 restaurant-column" data-category="pizza">
         <article class="restaurant">
-          <div class="restaurant-cover">Casa Pizza</div>
-
+          <div class="restaurant-photo photo-pizza" aria-hidden="true"></div>
           <div class="restaurant-info">
-            <h3>Casa Pizza</h3>
+            <h3><a class="restaurant-title-link stretched-link" data-restaurant-key="casa-pizza" href="?restaurant=casa-pizza">Casa Pizza</a></h3>
             <p>{% trans "Pizza · Italian cuisine" %}</p>
-            <p>{% trans "Rating: 4.7 · 25–35 min" %}</p>
-            <p>{% trans "Delivery: 500 ₸" %}</p>
+            <p class="restaurant-meta">
+              <span>{% trans "Rating: 4.7 · 25–35 min" %}</span>
+              <span>{% trans "Delivery: 500 ₸" %}</span>
+            </p>
 
             <details>
               <summary>{% trans "View menu" %}</summary>
               <ul class="list-unstyled">
-                <li class="bb-menu-dish">
-                  <span>{% trans "Margherita" %} — 2 500 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="casa-pizza-1" data-name="Маргарита"
-                          data-restaurant="Casa Pizza" data-price="2500"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Pizza' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Margherita" %}</span> — 2 500 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-4">
+                      {% if -4 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-4"
+                            {% if -4 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="casa-pizza-1" data-name="Маргарита"
+                            data-restaurant="Casa Pizza" data-price="2500"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
-                <li class="bb-menu-dish">
-                  <span>{% trans "Pepperoni" %} — 2 900 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="casa-pizza-2" data-name="Пепперони"
-                          data-restaurant="Casa Pizza" data-price="2900"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Pizza' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Pepperoni" %}</span> — 2 900 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-5">
+                      {% if -5 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-5"
+                            {% if -5 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="casa-pizza-2" data-name="Пепперони"
+                            data-restaurant="Casa Pizza" data-price="2900"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
-                <li class="bb-menu-dish">
-                  <span>{% trans "Lemonade" %} — 900 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="casa-pizza-3" data-name="Лимонад"
-                          data-restaurant="Casa Pizza" data-price="900"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Drinks' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Lemonade" %}</span> — 900 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-6">
+                      {% if -6 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-6"
+                            {% if -6 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="casa-pizza-3" data-name="Лимонад"
+                            data-restaurant="Casa Pizza" data-price="900"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
               </ul>
             </details>
@@ -352,32 +774,57 @@
         </article>
       </div>
 
-      <div class="col-md-4 restaurant-column" data-category="sushi">
+      <div class="col-sm-6 col-lg-4 restaurant-column" data-category="sushi">
         <article class="restaurant">
-          <div class="restaurant-cover">Nori Sushi</div>
-
+          <div class="restaurant-photo photo-sushi" aria-hidden="true"></div>
           <div class="restaurant-info">
-            <h3>Nori Sushi</h3>
+            <h3><a class="restaurant-title-link stretched-link" data-restaurant-key="nori-sushi" href="?restaurant=nori-sushi">Nori Sushi</a></h3>
             <p>{% trans "Sushi · Japanese cuisine" %}</p>
-            <p>{% trans "Rating: 4.9 · 30–40 min" %}</p>
-            <p>{% trans "Delivery: 600 ₸" %}</p>
+            <p class="restaurant-meta">
+              <span>{% trans "Rating: 4.9 · 30–40 min" %}</span>
+              <span>{% trans "Delivery: 600 ₸" %}</span>
+            </p>
 
             <details>
               <summary>{% trans "View menu" %}</summary>
               <ul class="list-unstyled">
-                <li class="bb-menu-dish">
-                  <span>{% trans "Philadelphia rolls" %} — 3 200 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="nori-sushi-1" data-name="Филадельфия"
-                          data-restaurant="Nori Sushi" data-price="3200"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Rolls' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Philadelphia rolls" %}</span> — 3 200 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-7">
+                      {% if -7 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-7"
+                            {% if -7 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="nori-sushi-1" data-name="Филадельфия"
+                            data-restaurant="Nori Sushi" data-price="3200"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
-                <li class="bb-menu-dish">
-                  <span>{% trans "Set for two" %} — 6 900 ₸</span>
-                  <button type="button" class="bb-heart js-fav"
-                          data-fav-id="nori-sushi-2" data-name="Сет на двоих"
-                          data-restaurant="Nori Sushi" data-price="6900"
-                          aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                <li class="bb-menu-dish" data-menu-category="{% trans 'Sets' %}">
+                  <div class="restaurant-menu-photo" aria-hidden="true"></div>
+                  <span><span data-menu-dish-name>{% trans "Set for two" %}</span> — 6 900 ₸</span>
+                  <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
+                            data-url="{% url 'customer:cart_add' %}" data-dish-id="-8">
+                      {% if -8 in cart_dish_ids %}{{ cart_added_label|cut:" ✓" }}{% else %}{% trans "Add to cart" %}{% endif %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-remove-from-cart" aria-label="{% trans 'Remove from cart' %}"
+                            data-url="{% url 'customer:cart_remove' %}" data-dish-id="-8"
+                            {% if -8 not in cart_dish_ids %}hidden{% endif %}>
+                      {% trans "Remove" %}
+                    </button>
+                    <button type="button" class="bb-heart js-fav"
+                            data-fav-id="nori-sushi-2" data-name="Сет на двоих"
+                            data-restaurant="Nori Sushi" data-price="6900"
+                            aria-pressed="false" aria-label="{% trans "Add to favorites" %}"></button>
+                  </div>
                 </li>
               </ul>
             </details>
@@ -385,37 +832,191 @@
         </article>
       </div>
 
+      {% endfor %}
     </div>
   </section>
 
+  {% if not restaurants %}
   <p class="text-muted small mt-4">
     ({% trans "Sample restaurants and prices. Checkout is not available yet." %})
   </p>
+  {% endif %}
 
 </div>
 
+<div id="cart-alert" class="alert alert-danger d-none" role="alert"></div>
+<div id="menu-cart-status" class="visually-hidden" role="status"></div>
+
+<section id="restaurant-menu" hidden>
+  <a class="restaurant-link d-inline-block mb-3" href="{{ request.path }}">
+    {% get_current_language as restaurant_language %}
+    ← {% if restaurant_language == "ru" %}Рестораны{% else %}Restaurants{% endif %}
+  </a>
+  <header class="restaurant-menu-header mb-4">
+    <h1 class="mb-0" id="restaurant-menu-name"></h1>
+    <p class="mb-0" id="restaurant-menu-cuisine" hidden></p>
+  </header>
+  <h2 class="h4 mb-3">{% trans "Menu" %}</h2>
+  <div class="restaurant-menu-filters mb-4" id="restaurant-menu-filters" hidden>
+    <div>
+      <label class="visually-hidden" for="restaurant-menu-category">{% trans "Category" %}</label>
+      <select class="form-select rounded-pill" id="restaurant-menu-category">
+        <option value="">{% trans "All" %}</option>
+      </select>
+    </div>
+    <div class="restaurant-menu-search-field">
+      <label class="visually-hidden" for="restaurant-menu-search">{% trans "Search dishes by name" %}</label>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m20 20-3.5-3.5"></path>
+      </svg>
+      <input class="form-control" id="restaurant-menu-search" type="search"
+             placeholder="{% trans 'Search dishes by name' %}">
+    </div>
+  </div>
+  <p class="text-muted" id="restaurant-menu-no-results" role="status" hidden>{% trans "No matching dishes." %}</p>
+</section>
+
 <script>
-  const buttons = document.querySelectorAll(".category");
-  const restaurants = document.querySelectorAll(".restaurant-column");
+  function setupRestaurantMenuFilters(dishes) {
+    const rows = Array.from(dishes.querySelectorAll("[data-menu-category]"));
+    if (!rows.length) return;
 
-  buttons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      const category = button.dataset.category;
+    const filters = document.getElementById("restaurant-menu-filters");
+    const category = document.getElementById("restaurant-menu-category");
+    const search = document.getElementById("restaurant-menu-search");
+    const noResults = document.getElementById("restaurant-menu-no-results");
+    const categories = [...new Set(rows.map((row) => row.dataset.menuCategory.trim()).filter(Boolean))];
+    categories.sort((a, b) => a.localeCompare(b, document.documentElement.lang || undefined));
+    for (const name of categories) {
+      category.add(new Option(name, name));
+    }
 
-      buttons.forEach(function (item) {
-        const selected = item === button;
+    const normalize = (value) => value.trim().toLowerCase().replaceAll("ё", "е");
+    function filterDishes() {
+      const query = normalize(search.value);
+      let hasResults = false;
+      for (const row of rows) {
+        const matchesCategory = !category.value || row.dataset.menuCategory.trim() === category.value;
+        const name = row.querySelector("[data-menu-dish-name]").textContent;
+        row.hidden = !(matchesCategory && normalize(name).includes(query));
+        hasResults ||= !row.hidden;
+      }
+      noResults.hidden = hasResults;
+    }
 
-        item.classList.toggle("active", selected);
-        item.setAttribute("aria-pressed", selected);
-      });
+    category.addEventListener("change", filterDishes);
+    search.addEventListener("input", filterDishes);
+    filters.hidden = false;
+    filterDishes();
+  }
 
-      restaurants.forEach(function (restaurant) {
-        restaurant.hidden =
-          category !== "all" &&
-          restaurant.dataset.category !== category;
-      });
+  const restaurantKey = new URLSearchParams(window.location.search).get("restaurant");
+  const selectedRestaurant = Array.from(document.querySelectorAll(".restaurant-title-link[data-restaurant-key]"))
+    .find((link) => link.dataset.restaurantKey === restaurantKey);
+
+  if (selectedRestaurant) {
+    const restaurantMenu = document.getElementById("restaurant-menu");
+    const name = selectedRestaurant.textContent.trim();
+    const card = selectedRestaurant.closest(".restaurant");
+    const dishes = card.querySelector("details ul");
+    const cover = card.querySelector(".restaurant-photo");
+    const header = restaurantMenu.querySelector(".restaurant-menu-header");
+    const cuisine = document.getElementById("restaurant-menu-cuisine");
+    cuisine.textContent = card.querySelector(".restaurant-info > p:not(.restaurant-meta)")?.textContent.trim() || "";
+    cuisine.hidden = !cuisine.textContent;
+
+    const photoClasses = ["photo-pizza", "photo-burger", "photo-sushi"];
+    const coverClass = photoClasses.find((className) => cover.classList.contains(className));
+    if (coverClass) header.classList.add(coverClass);
+
+    for (const photo of dishes.querySelectorAll(".restaurant-menu-photo")) {
+      const row = photo.closest("li");
+      const terms = row.dataset.menuCategory + " " + row.querySelector("[data-menu-dish-name]").textContent;
+      if (/pizza|margherita|pepperoni|пицц|маргарит|пепперони/i.test(terms)) {
+        photo.classList.add("photo-pizza");
+      } else if (/burger|fries|бургер|картофель фри/i.test(terms)) {
+        photo.classList.add("photo-burger");
+      } else if (/sushi|roll|sets|суши|ролл|сет/i.test(terms)) {
+        photo.classList.add("photo-sushi");
+      }
+    }
+
+    document.title = name + " — BiteBox";
+    document.getElementById("restaurant-menu-name").textContent = name;
+    dishes.classList.add("restaurant-menu-dishes");
+    const alert = document.getElementById("cart-alert");
+    restaurantMenu.querySelector("h2").before(alert);
+    restaurantMenu.append(dishes);
+    setupRestaurantMenuFilters(dishes);
+    document.querySelector(".home").hidden = true;
+    restaurantMenu.hidden = false;
+  } else {
+    document.getElementById("restaurants").prepend(document.getElementById("cart-alert"));
+    document.querySelectorAll(".restaurant-info details").forEach((menu) => {
+      const restaurantLink = menu.closest(".restaurant").querySelector(".restaurant-title-link");
+      const link = document.createElement("a");
+      link.className = "restaurant-link";
+      link.tabIndex = -1;
+      link.setAttribute("aria-hidden", "true");
+      link.href = restaurantLink.href;
+      link.textContent = menu.querySelector("summary").textContent;
+      menu.before(link);
+      menu.hidden = true;
     });
-  });
+  }
+
+  function setupDiscoverySearch() {
+    const discovery = document.getElementById("restaurants");
+    const buttons = discovery.querySelectorAll(".category");
+    const search = document.getElementById("discovery-search");
+    const noResults = document.getElementById("discovery-no-results");
+    const normalize = (value) => value.trim().toLowerCase().replaceAll("ё", "е");
+    const restaurants = Array.from(discovery.querySelectorAll(".restaurant-column"), (column) => {
+      const name = normalize(column.querySelector(".restaurant-title-link").textContent);
+      const dishes = Array.from(column.querySelectorAll("[data-menu-dish-name]"), (dish) => {
+        const label = dish.textContent.trim();
+        return { label, name: normalize(label) };
+      });
+      const matches = document.createElement("p");
+      matches.className = "restaurant-matches";
+      matches.hidden = true;
+      column.querySelector(".restaurant-info").append(matches);
+      return { column, name, dishes, matches };
+    });
+
+    function filterRestaurants() {
+      const category = discovery.querySelector(".category.active").dataset.category;
+      const query = normalize(search.value);
+      let hasResults = false;
+
+      for (const { column, name, dishes, matches } of restaurants) {
+        const matchesCategory = !category || category === "all" || column.dataset.category === category;
+        const matchingDishes = query ? dishes.filter((dish) => dish.name.includes(query)) : [];
+        column.hidden = !(matchesCategory && (name.includes(query) || matchingDishes.length));
+        matches.hidden = column.hidden || !matchingDishes.length;
+        matches.textContent = matchingDishes.map((dish) => dish.label).join(", ");
+        hasResults ||= !column.hidden;
+      }
+      noResults.hidden = hasResults;
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        for (const item of buttons) {
+          const selected = item === button;
+          item.classList.toggle("active", selected);
+          item.setAttribute("aria-pressed", selected);
+        }
+        filterRestaurants();
+      });
+    }
+    search.addEventListener("input", filterRestaurants);
+    window.addEventListener("pageshow", filterRestaurants);
+    filterRestaurants();
+  }
+
+  if (!selectedRestaurant) setupDiscoverySearch();
 </script>
 
 <script src="{% static 'js/favorites.js' %}"
@@ -431,4 +1032,11 @@
         data-dish-7='{% trans "Set for two" %}'></script>
 
 
+<script src="{% static 'js/cart.js' %}"
+        data-update-error='{% trans "Could not update the cart" %}'
+        data-network-error='{% trans "Could not reach the server. Please try again." %}'
+        data-add-error='{% trans "Could not add the dish" %}'
+        data-added="{{ cart_added_label|cut:' ✓' }}"
+        data-add-to-cart="{% trans 'Add to cart' %}"
+        data-replace-cart='{% trans "Your cart contains dishes from “{current}”. Replace them with dishes from “{next}”?" %}' data-removed='{% trans "Removed from cart" %}'></script>
 {% endblock %}

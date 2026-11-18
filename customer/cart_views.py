@@ -36,7 +36,7 @@ def cart_page(request):
     context = {
         "cart": build_cart(request),
         "menu_url": reverse("customer:menu"),
-        "checkout_url": None,
+        "checkout_url": reverse("customer:checkout"),
     }
     return render(request, "customer/cart.html", context)
 

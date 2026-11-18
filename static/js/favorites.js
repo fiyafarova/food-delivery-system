@@ -1,6 +1,12 @@
 (function () {
     const labels = document.currentScript.dataset;
     const dishNames = new Map(["Чизбургер", "Картофель фри", "Лимонад", "Маргарита", "Пепперони", "Филадельфия", "Сет на двоих"].map((name, index) => [name, labels["dish" + (index + 1)]]));
+    const demoRestaurants = {
+        "urban-burger": { photo: "burgerPhoto", delivery: 400, duration: "20–30" },
+        "casa-pizza": { photo: "pizzaPhoto", delivery: 500, duration: "25–35" },
+        "nori-sushi": { photo: "sushiPhoto", delivery: 600, duration: "30–40" }
+    };
+    const photoKeys = ["pizzaPhoto", "burgerPhoto", "sushiPhoto"];
     var STORAGE_KEY = "bitebox_favorites";
     var SVG_NS = "http://www.w3.org/2000/svg";
     var HEART_PATH =
@@ -99,31 +105,64 @@
         return groups;
     }
 
+    function addText(parent, tag, className, value) {
+        const element = document.createElement(tag);
+        element.className = className;
+        element.textContent = value;
+        parent.appendChild(element);
+        return element;
+    }
+
     function createCard(entry) {
-        var col = document.createElement("div");
+        const col = document.createElement("div");
         col.className = "col-12 col-sm-6 col-lg-4";
+        const card = document.createElement("article");
+        card.className = "bb-card h-100";
 
-        var card = document.createElement("div");
-        card.className = "bb-card d-flex justify-content-between align-items-center gap-3 h-100";
+        const demoKey = entry.id.match(/^(urban-burger|casa-pizza|nori-sushi)-[1-3]$/)?.[1];
+        const demo = demoRestaurants[demoKey];
+        const photoKey = demo?.photo || entry.photo;
+        if (photoKeys.includes(photoKey) && labels[photoKey]) {
+            const image = document.createElement("img");
+            image.src = labels[photoKey];
+            image.alt = "";
+            image.loading = "lazy";
+            image.className = "bb-fav-photo";
+            card.appendChild(image);
+        }
 
-        var info = document.createElement("div");
-        var name = document.createElement("div");
-        name.className = "fw-bold";
-        name.textContent = dishNames.get(entry.name) || entry.name;
-        var price = document.createElement("div");
-        price.className = "bb-price";
-        price.textContent = formatPrice(entry.price);
-        info.appendChild(name);
-        info.appendChild(price);
+        const content = document.createElement("div");
+        content.className = "bb-fav-card-content";
+        if (entry.category) {
+            addText(content, "p", "bb-fav-category", entry.category);
+        }
+        addText(content, "h3", "h5 fw-bold mb-0", dishNames.get(entry.name) || entry.name);
+        addText(content, "p", "bb-price mb-0", formatPrice(entry.price));
+        if (entry.description) {
+            addText(content, "p", "bb-muted bb-fav-description mb-0", entry.description);
+        }
 
-        var remove = document.createElement("button");
+        if (demo) {
+            const minutes = document.documentElement.lang === "ru" ? "мин" : "min";
+            addText(content, "p", "bb-fav-delivery mb-0",
+                labels.delivery + ": " + demo.duration + " " + minutes + " · " + formatPrice(demo.delivery));
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "bb-fav-actions";
+        const restaurantKey = demoKey || entry.restaurantKey;
+        if (restaurantKey && labels.menuUrl) {
+            const menuLink = addText(actions, "a", "bb-link", labels.menuLabel);
+            const url = new URL(labels.menuUrl, window.location.href);
+            url.searchParams.set("restaurant", restaurantKey);
+            menuLink.href = url.href;
+        }
+
+        const remove = addText(actions, "button", "btn btn-bb-outline js-fav-remove", labels.remove);
         remove.type = "button";
-        remove.className = "btn btn-bb-outline js-fav-remove";
         remove.dataset.favId = entry.id;
-        remove.textContent = labels.remove;
-
-        card.appendChild(info);
-        card.appendChild(remove);
+        content.appendChild(actions);
+        card.appendChild(content);
         col.appendChild(card);
         return col;
     }
@@ -164,11 +203,18 @@
         var heart = event.target.closest(".js-fav");
         if (heart) {
             event.preventDefault();
+            const row = heart.closest("[data-menu-category]");
+            const photo = row?.querySelector(".restaurant-menu-photo");
+            const photoKey = ["pizza", "burger", "sushi"].find((name) => photo?.classList.contains("photo-" + name));
             toggleFavorite({
                 id: heart.dataset.favId,
                 name: heart.dataset.name,
                 restaurant: heart.dataset.restaurant,
-                price: Number(heart.dataset.price)
+                price: Number(heart.dataset.price),
+                restaurantKey: heart.dataset.restaurantKey,
+                category: row?.dataset.menuCategory,
+                description: heart.dataset.description,
+                photo: photoKey ? photoKey + "Photo" : undefined
             });
             syncHearts();
             renderFavorites();

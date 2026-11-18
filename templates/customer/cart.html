@@ -10,6 +10,42 @@
         color: var(--bb-text);
         min-height: 60vh;
     }
+    .bb-cart .bb-cart-header {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem;
+        margin-bottom: 1.5rem;
+    }
+    .bb-cart:has(#cart-empty:not(.d-none)) .bb-cart-body {
+        padding-top: 0 !important;
+    }
+    .bb-cart:has(#cart-empty:not(.d-none)) .bb-cart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .25rem;
+        margin-bottom: clamp(1.25rem, 3vw, 2rem);
+        padding-bottom: .875rem;
+        border-bottom: 1px solid var(--bb-border);
+    }
+    .bb-cart:has(#cart-empty:not(.d-none)) .bb-cart-header .bb-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-size: .9375rem;
+    }
+    .bb-cart .bb-cart-title {
+        font-weight: 700;
+    }
+    .bb-cart:has(#cart-empty:not(.d-none)) .bb-cart-title {
+        color: var(--bb-orange-dark);
+        font-size: clamp(1.75rem, 3.25vw, 2.625rem);
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: -.045em;
+    }
     .bb-cart .bb-card {
         background: #fff;
         border: 1px solid var(--bb-border);
@@ -121,12 +157,12 @@
      data-update-url="{% url 'customer:cart_update' %}"
      data-remove-url="{% url 'customer:cart_remove' %}"
      data-clear-url="{% url 'customer:cart_clear' %}">
-    <div class="container py-4 py-md-5">
+    <div class="container py-4 py-md-5 bb-cart-body">
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-            <h1 class="h2 fw-bold mb-0">{% trans "Cart" %}</h1>
+        <header class="bb-cart-header">
             <a class="bb-link" href="{{ menu_url }}">← {% trans "Continue shopping" %}</a>
-        </div>
+            <h1 class="h2 mb-0 bb-cart-title">{% trans "Cart" %}</h1>
+        </header>
 
         {% for message in messages %}
         <div class="alert alert-danger" role="alert">{{ message }}</div>
@@ -185,13 +221,15 @@
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="bb-muted">{% trans "Delivery" %}</span>
-                            <span class="text-end">{% trans "Calculated at checkout" %}</span>
+                            <span class="text-end">{% if cart.delivery_display %}{{ cart.delivery_display }}{% else %}—{% endif %}</span>
                         </div>
+                        {% if cart.total_display %}
                         <hr>
                         <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
                             <span>{% trans "Total to pay" %}</span>
-                            <span data-total>{{ cart.subtotal_display }}</span>
+                            <span data-total>{{ cart.total_display }}</span>
                         </div>
+                        {% endif %}
 
                         <div class="alert alert-warning small {% if not cart.has_unavailable %}d-none{% endif %}" id="cart-unavailable">
                             {% trans "Your cart contains unavailable items. Remove them to continue." %}
