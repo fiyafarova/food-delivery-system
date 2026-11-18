@@ -57,3 +57,62 @@ class AddressForm(forms.Form):
         self.profile.city = self.cleaned_data["city"]
         self.profile.address = self.cleaned_data["address"]
         self.profile.save(update_fields=["city", "address"])
+
+class SignUpForm(forms.Form):
+    """Customer registration on the website. Employees and managers are registered by
+    their manager / an administrator on the staff pages, not here."""
+
+    username = forms.CharField(label=_("Username"), max_length=150)
+    email = forms.EmailField(label=_("Email"))
+    password1 = forms.CharField(label=_("Password"), widget=forms.PasswordInput, strip=False)
+    password2 = forms.CharField(label=_("Repeat password"), widget=forms.PasswordInput, strip=False)
+
+    def clean_username(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.validators import UnicodeUsernameValidator
+
+        username = self.cleaned_data["username"].strip()
+        UnicodeUsernameValidator()(username)
+        if get_user_model().objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError(_("This username is already taken."))
+        return username
+
+    def clean_email(self):
+        from django.contrib.auth import get_user_model
+
+        email = self.cleaned_data["email"].strip().lower()
+        if get_user_model().objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(_("This email is already in use."))
+        return email
+
+    def clean(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.password_validation import validate_password
+
+        cleaned = super().clean()
+        password1, password2 = cleaned.get("password1"), cleaned.get("password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", _("The two passwords do not match."))
+        elif password1:
+            # same rules as the API: length, common passwords, only digits, similar to username
+            candidate = get_user_model()(username=cleaned.get("username", ""), email=cleaned.get("email", ""))
+            try:
+                validate_password(password1, candidate)
+            except forms.ValidationError as error:
+                self.add_error("password1", error)
+        return cleaned
+
+    @transaction.atomic
+    def save(self):
+        from django.contrib.auth import get_user_model
+
+        from accounts.models import CustomerProfile
+
+        user = get_user_model().objects.create_user(
+            username=self.cleaned_data["username"],
+            email=self.cleaned_data["email"],
+            password=self.cleaned_data["password1"],  # create_user stores only the PBKDF2 hash
+            role="customer",
+        )
+        CustomerProfile.objects.create(user=user)
+        return user

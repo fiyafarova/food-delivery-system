@@ -50,9 +50,13 @@ Run the tests: `python manage.py test`
 | Address | What | Who can open it |
 |---|---|---|
 | http://127.0.0.1:8000/ | customer menu | everyone |
+| http://127.0.0.1:8000/register/ | customer sign-up | everyone |
 | http://127.0.0.1:8000/login/ | customer login | everyone |
 | http://127.0.0.1:8000/profile/?tab=orders | my order history → order page `/order/<id>/` | the customer who placed the order |
 | http://127.0.0.1:8000/staff/login/ | staff login | everyone |
+| http://127.0.0.1:8000/staff/team/ | register / remove employees | managers (owners), admins |
+| http://127.0.0.1:8000/staff/managers/ | register managers with a restaurant | admins |
+| http://127.0.0.1:8000/staff/password/ | change password | every logged-in user |
 | http://127.0.0.1:8000/staff/orders/ | orders, status change, menu availability | employee, owner, admin |
 | http://127.0.0.1:8000/admin/ | Django admin (users, roles, data) | admin only |
 | http://127.0.0.1:8000/api/ | REST API: accounts, restaurants (see below) | depends on the endpoint |
@@ -89,9 +93,18 @@ All users are stored in one table, `accounts_user` (custom model `accounts.User`
 | Manager (restaurant owner) | `owner_demo` | `role = "owner"` | `/staff/` pages, create/edit own restaurants and dishes via API |
 | Administrator | `admin_demo` | `role = "admin"` + superuser | everything, including `/admin/` |
 
-- **Registration** (`POST /api/auth/register/`) always creates a **customer**. A `role` sent in the
-  request is ignored, so nobody can make themselves an owner or admin. Employees and managers get
-  their role from an administrator in `/admin/` (Users → user → *Role* / *Groups*).
+- **Registration** — who registers whom:
+
+  | Role | Registered by | Page |
+  |---|---|---|
+  | Customer | themself | http://127.0.0.1:8000/register/ (or `POST /api/auth/register/`) |
+  | Employee | a manager, for one of their restaurants | http://127.0.0.1:8000/staff/team/ |
+  | Manager (restaurant owner) | an administrator, together with the restaurant | http://127.0.0.1:8000/staff/managers/ |
+
+  Nobody can choose their own role: extra fields like `role` or `is_superuser` in a sign-up are ignored.
+  Employees and managers get a **temporary password** and must change it at first login
+  (staff pages open "Change password" until they do). Everyone can change the password at
+  http://127.0.0.1:8000/staff/password/ (link in the profile and on the orders page).
 - **Passwords** are never stored as text: Django saves a salted **PBKDF2-SHA256** hash
   (1 500 000 iterations), e.g. `pbkdf2_sha256$1500000$<salt>$<hash>`. Registration rejects short,
   common and numeric-only passwords.
