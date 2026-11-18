@@ -4,7 +4,8 @@ Owner: Sofiya.
 
 Until the models are ready, data comes from staff/test_data.py and is kept in
 memory (it resets when the server restarts).
-TODO: staff login and role check (Group "Restaurant staff").
+Every view is protected by @staff_required (see staff/permissions.py):
+only logged-in users in the group "Restaurant staff" can open them.
 """
 
 from django.contrib import messages
@@ -13,6 +14,7 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from .permissions import staff_required
 from .test_data import make_menu, make_orders
 
 STATUSES = ["Placed", "Preparing", "Delivered", "Cancelled"]
@@ -56,6 +58,7 @@ def order_total(order):
     return sum(line["quantity"] * line["unit_price"] for line in order["items"])
 
 
+@staff_required
 def orders(request):
     status = request.GET.get("status", "")
     shown = []
@@ -72,6 +75,7 @@ def orders(request):
     })
 
 
+@staff_required
 def order_detail(request, order_id):
     order = find_order(order_id)
     lines = [{**line, "line_total": line["quantity"] * line["unit_price"]} for line in order["items"]]
@@ -84,6 +88,7 @@ def order_detail(request, order_id):
     })
 
 
+@staff_required
 @require_POST
 def change_status(request, order_id):
     order = find_order(order_id)
@@ -99,10 +104,12 @@ def change_status(request, order_id):
     return redirect("staff:order_detail", order_id=order_id)
 
 
+@staff_required
 def menu(request):
     return render(request, "staff/menu.html", {"items": MENU})
 
 
+@staff_required
 @require_POST
 def toggle_availability(request, item_id):
     for item in MENU:
