@@ -17,14 +17,25 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 3. Create the tables (also creates the group "Restaurant staff")
+# 3. Create the tables (schema "food_delivery") and the group "Restaurant staff"
 python manage.py migrate
 
-# 4. Demo accounts for every role (choose any password, min. 8 characters)
+# 4. Demo data: 4 customers, 10 dishes, 4 orders (core/fixtures/demo_data.json)
+python manage.py loaddata demo_data
+
+# 5. Demo accounts for every role (choose any password, min. 8 characters)
 python manage.py create_demo_users --password <choose-a-password>
 
-# 5. Start the server
+# 6. Start the server
 python manage.py runserver
+```
+
+Optional, Darya's SQL on top of the same tables (total trigger, `order_summary` view, PostgreSQL roles):
+
+```bash
+for f in food_delivery_database role_creation adding_security; do
+  docker exec -i fooddelivery-db psql -U fooddelivery -d fooddelivery < database/$f.sql
+done
 ```
 
 Run the tests: `python manage.py test`
@@ -41,7 +52,8 @@ Run the tests: `python manage.py test`
 | http://127.0.0.1:8000/staff/login/ | staff login | everyone |
 | http://127.0.0.1:8000/staff/orders/ | orders, status change, menu availability | employee, owner, admin |
 | http://127.0.0.1:8000/admin/ | Django admin (users, roles, data) | admin only |
-| http://127.0.0.1:8000/api/ | REST API (see below) | depends on the endpoint |
+| http://127.0.0.1:8000/api/ | REST API: accounts, restaurants (see below) | depends on the endpoint |
+| http://127.0.0.1:8000/core/ | JSON API: cart, orders, payments, delivery (`core/urls.py`) | everyone (no login yet) |
 
 ## Users, roles and passwords
 
@@ -83,7 +95,9 @@ Other endpoints: `/api/auth/token/refresh/`, `/api/auth/change-password/`, `/api
 
 | Folder | What it contains | Owner   |
 |---|---|---------|
-| `core/` | Data models (Customer, Food_Item, Food_Order, Order_Item) | backend |
+| `core/` | Order models (Customer, FoodItem, FoodOrder, OrderItem, Payment, Delivery) + JSON API | Aksunkar, Darya |
+| `accounts/`, `restaurants/` | Custom User, registration/JWT, restaurants and search REST API | Sayazhan |
+| `database/` | SQL: schema, total trigger, `order_summary` view, PostgreSQL roles | Darya |
 | `customer/` | Client pages: menu, cart, checkout, order status | Dilnaz  |
 | `staff/` | Staff pages: orders, order details, menu availability | Sofiya  |
 | `templates/` | `base.html` (shared layout and language switcher) + page templates | shared  |
