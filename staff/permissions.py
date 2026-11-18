@@ -40,6 +40,45 @@ def restaurants_for(user):
     return Restaurant.objects.filter(Q(owner=user) | Q(staff=user)).distinct()
 
 
+def must_change_password(user):
+    from .models import TemporaryPassword
+
+    return TemporaryPassword.objects.filter(user=user).exists()
+
+
+def is_manager(user):
+    """Manager = restaurant owner (role "owner"), admin (role "admin") or superuser."""
+    return user.is_authenticated and user.is_restaurant_owner
+
+
+def is_admin(user):
+    return user.is_authenticated and (user.is_superuser or user.role == user.Role.ADMIN)
+
+
+def manager_required(view):
+    """Like staff_required, but only for managers (owners) and admins."""
+
+    @wraps(view)
+    @staff_required
+    def wrapper(request, *args, **kwargs):
+        if not is_manager(request.user):
+            raise PermissionDenied
+        return view(request, *args, **kwargs)
+
+    return wrapper
+
+
+def admin_required(view):
+    @wraps(view)
+    @staff_required
+    def wrapper(request, *args, **kwargs):
+        if not is_admin(request.user):
+            raise PermissionDenied
+        return view(request, *args, **kwargs)
+
+    return wrapper
+
+
 def staff_required(view):
     """Decorator for staff views. Put it above @require_POST."""
 
@@ -49,6 +88,9 @@ def staff_required(view):
             return redirect_to_login(request.get_full_path(), login_url="staff:login")
         if not is_restaurant_staff(request.user):
             raise PermissionDenied
+        if must_change_password(request.user):
+            # temporary password from a manager/admin: set an own password first
+            return redirect_to_login(request.get_full_path(), login_url="staff:password_change")
         return view(request, *args, **kwargs)
 
     return wrapper

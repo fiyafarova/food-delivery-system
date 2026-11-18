@@ -1,0 +1,21 @@
+{% load i18n %}
+{% for field in form %}
+<div class="mb-3">
+    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="text-muted small">({% trans "optional" %})</span>{% endif %}</label>
+    {% if field.name == "restaurant" %}
+    <select class="form-select{% if field.errors %} is-invalid{% endif %}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" required>
+        {% for value, label in field.field.choices %}
+        <option value="{{ value }}"{% if field.value|stringformat:"s" == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    {% else %}
+    <input class="form-control{% if field.errors %} is-invalid{% endif %}"
+           type="{% if field.field.widget.input_type == 'password' %}password{% elif field.name == 'email' %}email{% else %}text{% endif %}"
+           name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+           {% if field.field.widget.input_type != 'password' %}value="{{ field.value|default:'' }}"{% endif %}
+           {% if field.field.widget.input_type == 'password' %}autocomplete="new-password"{% endif %}
+           {% if field.field.required %}required{% endif %}>
+    {% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+</div>
+{% endfor %}

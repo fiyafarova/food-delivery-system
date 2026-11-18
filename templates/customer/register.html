@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Sign up" %} — BiteBox{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-12 col-sm-9 col-md-6 col-lg-5">
+        <h1 class="h3 fw-bold mb-3">{% trans "Sign up" %}</h1>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <input class="form-control{% if field.errors %} is-invalid{% endif %}"
+                       type="{% if 'password' in field.name %}password{% elif field.name == 'email' %}email{% else %}text{% endif %}"
+                       name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                       {% if 'password' not in field.name %}value="{{ field.value|default:'' }}"{% endif %}
+                       autocomplete="{% if field.name == 'username' %}username{% elif field.name == 'email' %}email{% else %}new-password{% endif %}" required>
+                {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+            </div>
+            {% endfor %}
+            <button class="btn btn-dark w-100" type="submit">{% trans "Create account" %}</button>
+        </form>
+        <p class="text-muted small mt-3 mb-0">
+            {% trans "Already have an account?" %} <a href="{% url 'customer:login' %}">{% trans "Log in" %}</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

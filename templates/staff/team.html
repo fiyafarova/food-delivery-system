@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Team" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% trans "Team" %}</h1>
+    <a class="btn btn-outline-dark" href="{% url 'staff:orders' %}">{% trans "Back to orders" %}</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+        {% for restaurant in restaurants %}
+        <h2 class="h5 mt-2">{{ restaurant.name }}</h2>
+        <table class="table align-middle">
+            <thead><tr><th>{% trans "Username" %}</th><th>{% trans "Name" %}</th><th>{% trans "Email" %}</th><th></th></tr></thead>
+            <tbody>
+            {% for employee in restaurant.staff.all %}
+            <tr>
+                <td>{{ employee.username }}</td>
+                <td>{{ employee.get_full_name|default:"—" }}</td>
+                <td>{{ employee.email }}</td>
+                <td class="text-end">
+                    <form method="post" action="{% url 'staff:team_remove' restaurant.pk employee.pk %}" class="m-0">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Remove" %}</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted">{% trans "No employees yet." %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% empty %}
+        <p class="text-muted">{% trans "You do not have a restaurant yet. An administrator creates it on the Managers page." %}</p>
+        {% endfor %}
+    </div>
+
+    {% if restaurants %}
+    <div class="col-12 col-lg-5">
+        <div class="card"><div class="card-body">
+            <h2 class="h5">{% trans "Register an employee" %}</h2>
+            <p class="text-muted small">{% trans "The employee logs in at the staff login page with this temporary password and must change it." %}</p>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% include "staff/_form_fields.html" %}
+                <button class="btn btn-dark w-100" type="submit">{% trans "Register employee" %}</button>
+            </form>
+        </div></div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
