@@ -312,3 +312,36 @@ msgstr "Город:"
 
 msgid "Address:"
 msgstr "Адрес:"
+
+msgid "Add to cart"
+msgstr "В корзину"
+
+msgid "Remove from cart"
+msgstr "Убрать из корзины"
+
+msgid "Removed from cart"
+msgstr "Удалено из корзины"
+
+msgid "No dishes yet."
+msgstr "Пока нет блюд."
+
+msgid "Category"
+msgstr "Категория"
+
+msgid "Search dishes by name"
+msgstr "Поиск блюд по названию"
+
+msgid "No matching dishes."
+msgstr "Блюда не найдены."
+
+msgid "Snacks"
+msgstr "Закуски"
+
+msgid "Drinks"
+msgstr "Напитки"
+
+msgid "Rolls"
+msgstr "Роллы"
+
+msgid "Sets"
+msgstr "Сеты"

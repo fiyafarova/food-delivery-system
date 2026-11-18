@@ -54,6 +54,15 @@
 
     function applyCart(data) {
         setBadge(data.count);
+        document.querySelectorAll(".js-remove-from-cart").forEach(function (button) {
+            button.hidden = !Object.hasOwn(data.lines, button.dataset.dishId);
+        });
+
+        document.querySelectorAll(".js-add-to-cart").forEach(function (button) {
+            button.textContent = Object.hasOwn(data.lines, button.dataset.dishId)
+                ? labels.added
+                : labels.addToCart;
+        });
 
         var root = document.getElementById("cart-root");
         if (!root) {
@@ -101,7 +110,7 @@
         }
     }
 
-    function sendCartChange(url, payload) {
+    function sendCartChange(url, payload, successMessage) {
         if (busy) {
             return;
         }
@@ -114,6 +123,10 @@
                     return;
                 }
                 applyCart(result.data);
+                var status = document.getElementById("menu-cart-status");
+                if (status && successMessage) {
+                    status.textContent = successMessage;
+                }
             })
             .catch(function () {
                 showError(labels.networkError);
@@ -124,7 +137,12 @@
     }
 
     function addDish(button, replace) {
-        post(button.dataset.url, {
+        if (busy) {
+            return;
+        }
+        busy = true;
+        hideError();
+        return post(button.dataset.url, {
             dish_id: button.dataset.dishId,
             replace: replace ? "1" : "0"
         })
@@ -134,24 +152,26 @@
                         return key === "current" ? result.data.current_restaurant : result.data.new_restaurant;
                     });
                     if (window.confirm(question)) {
-                        addDish(button, true);
+                        busy = false;
+                        return addDish(button, true);
                     }
                     return;
                 }
                 if (result.status >= 400) {
-                    window.alert(result.data.error || labels.addError);
+                    showError(result.data.error || labels.addError);
                     return;
                 }
-                setBadge(result.data.count);
-                var original = button.dataset.label || button.textContent;
-                button.dataset.label = original;
-                button.textContent = labels.added;
-                setTimeout(function () {
-                    button.textContent = original;
-                }, 1200);
+                applyCart(result.data);
+                var status = document.getElementById("menu-cart-status");
+                if (status) {
+                    status.textContent = labels.added;
+                }
             })
             .catch(function () {
-                window.alert(labels.networkError);
+                showError(labels.networkError);
+            })
+            .finally(function () {
+                busy = false;
             });
     }
 
@@ -160,6 +180,12 @@
         if (addButton) {
             event.preventDefault();
             addDish(addButton, false);
+            return;
+        }
+
+        var removeButton = event.target.closest(".js-remove-from-cart");
+        if (removeButton) {
+            sendCartChange(removeButton.dataset.url, { dish_id: removeButton.dataset.dishId }, labels.removed);
             return;
         }
 

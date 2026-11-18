@@ -8,12 +8,12 @@
 {% url 'customer:menu' as menu_url %}
 
 <div class="bb-fav-page">
-    <div class="container py-4 py-md-5">
+    <div class="container pb-4 pb-md-5">
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-            <h1 class="h2 fw-bold mb-0">{% trans "Favorites" %}</h1>
-            <a class="bb-link" href="{{ menu_url }}">← {% trans "Back to restaurants" %}</a>
-        </div>
+        <header class="bb-fav-header">
+            <a class="bb-link bb-fav-back" href="{{ menu_url }}">← {% trans "Back to restaurants" %}</a>
+            <h1 class="bb-fav-title">{% trans "Favorites" %}</h1>
+        </header>
 
         <div id="fav-list" class="d-none"></div>
 
@@ -35,6 +35,12 @@
         data-add='{% trans "Add to favorites" %}'
         data-remove-heart='{% trans "Remove from favorites" %}'
         data-remove='{% trans "Remove" %}'
+        data-menu-url="{{ menu_url }}"
+        data-menu-label="{% trans 'View menu' %}"
+        data-delivery="{% trans 'Delivery' %}"
+        data-pizza-photo="{% static 'images/promo-pizza.jpg' %}"
+        data-burger-photo="{% static 'images/promo-burger.jpeg' %}"
+        data-sushi-photo="{% static 'images/promo-sushi.jpg' %}"
         data-dish-1='{% trans "Cheeseburger" %}'
         data-dish-2='{% trans "French fries" %}'
         data-dish-3='{% trans "Lemonade" %}'
