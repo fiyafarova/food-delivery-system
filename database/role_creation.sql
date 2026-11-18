@@ -68,7 +68,7 @@ TO customer_role, staff_role, courier_role, manager_role;
 -- 6. RESTAURANT STAFF PERMISSIONS
 
 GRANT SELECT ON
-    food_delivery.food_item,
+    food_delivery.restaurants_fooditem,
     food_delivery.food_order,
     food_delivery.order_item
 TO staff_role;

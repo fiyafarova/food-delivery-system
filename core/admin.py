@@ -3,7 +3,6 @@
 from django.contrib import admin
 from .models import (
     Customer,
-    FoodItem,
     FoodOrder,
     OrderItem,
     Payment,
@@ -17,29 +16,17 @@ class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("name", "phone")
 
 
-@admin.register(FoodItem)
-class FoodItemAdmin(admin.ModelAdmin):
-    list_display = (
-        "food_item_id",
-        "name",
-        "price",
-        "category",
-        "is_available",
-    )
-    list_filter = ("category", "is_available")
-    search_fields = ("name",)
-
-
 @admin.register(FoodOrder)
 class FoodOrderAdmin(admin.ModelAdmin):
     list_display = (
         "order_id",
         "customer",
+        "restaurant",
         "order_date",
         "status",
         "total_amount",
     )
-    list_filter = ("status",)
+    list_filter = ("status", "restaurant")
     search_fields = ("order_id", "customer__name")
 
 
