@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 from core.models import FoodOrder
 from restaurants.models import FoodItem
 
+from .account_views import account_links
 from .permissions import restaurants_for, staff_required
 
 STATUSES = [choice for choice, _label in FoodOrder.Status.choices]
@@ -76,6 +77,7 @@ def orders(request):
         for order in queryset.order_by("-order_id")
     ]
     return render(request, "staff/orders.html", {
+        **account_links(request.user),
         "orders": shown,
         "statuses": STATUSES,
         "current_status": status,

@@ -1,9 +1,11 @@
 
 from django.contrib import messages
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.utils.translation import gettext
@@ -15,7 +17,7 @@ from core.access import customer_of
 from core.models import FoodOrder
 
 from .cart import build_cart
-from .forms import AddressForm, PersonalForm
+from .forms import AddressForm, PersonalForm, SignUpForm
 
 @ensure_csrf_cookie
 def menu(request):
@@ -168,3 +170,21 @@ def my_orders(user):
         return []
     return (FoodOrder.objects.filter(customer=customer)
             .select_related("restaurant").order_by("-order_date"))
+
+
+@require_http_methods(["GET", "POST"])
+def register(request):
+    """Customer sign-up: creates a customer account and logs it in."""
+    if request.user.is_authenticated:
+        return redirect("customer:profile")
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        messages.success(request, gettext("Welcome to BiteBox!"))
+        next_url = request.POST.get("next", "")
+        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()},
+                                               require_https=request.is_secure()):
+            next_url = "customer:profile"  # never redirect to another site
+        return redirect(next_url)
+    return render(request, "customer/register.html", {"form": form, "next": request.GET.get("next", "")})
