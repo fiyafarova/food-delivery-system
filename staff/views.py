@@ -2,9 +2,11 @@
 
 Owner: Sofiya.
 
-Data comes from the database (core.models: FoodOrder, OrderItem, FoodItem).
+Data comes from the database: orders from core.models (FoodOrder, OrderItem),
+dishes from restaurants.models.FoodItem.
 Every view is protected by @staff_required (see staff/permissions.py):
-only employees ("Restaurant staff" group), owners/admins and superusers can open them.
+only employees ("Restaurant staff" group), owners/admins and superusers can open them,
+and each user sees only the restaurants returned by restaurants_for(user).
 """
 
 from django.contrib import messages
@@ -12,9 +14,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from core.models import FoodItem, FoodOrder
+from core.models import FoodOrder
+from restaurants.models import FoodItem
 
-from .permissions import staff_required
+from .permissions import restaurants_for, staff_required
 
 STATUSES = [choice for choice, _label in FoodOrder.Status.choices]
 
@@ -36,10 +39,14 @@ BADGES = {
 }
 
 
-def find_order(order_id):
-    """Return the order with its customer and lines, or raise 404."""
+def visible_orders(user):
+    return FoodOrder.objects.filter(restaurant__in=restaurants_for(user))
+
+
+def find_order(user, order_id):
+    """Return the order with its customer and lines, or 404 (also for other restaurants' orders)."""
     return get_object_or_404(
-        FoodOrder.objects.select_related("customer").prefetch_related("items__food_item"),
+        visible_orders(user).select_related("customer", "restaurant").prefetch_related("items__food_item"),
         pk=order_id,
     )
 
@@ -52,7 +59,7 @@ def order_total(order):
 @staff_required
 def orders(request):
     status = request.GET.get("status", "")
-    queryset = FoodOrder.objects.select_related("customer").prefetch_related("items")
+    queryset = visible_orders(request.user).select_related("customer", "restaurant").prefetch_related("items")
     if status in STATUSES:
         queryset = queryset.filter(status=status)
 
@@ -61,6 +68,7 @@ def orders(request):
         {
             "id": order.order_id,
             "customer": order.customer.name,
+            "restaurant": order.restaurant.name,
             "total": order_total(order),
             "status": order.status,
             "badge": BADGES.get(order.status, "secondary"),
@@ -76,7 +84,7 @@ def orders(request):
 
 @staff_required
 def order_detail(request, order_id):
-    order = find_order(order_id)
+    order = find_order(request.user, order_id)
     lines = [
         {
             "name": line.food_item.name,
@@ -90,6 +98,7 @@ def order_detail(request, order_id):
         "id": order.order_id,
         "status": order.status,
         "customer": order.customer.name,
+        "restaurant": order.restaurant.name,
         "phone": order.customer.phone,
         "address": order.customer.address,
     }
@@ -105,7 +114,7 @@ def order_detail(request, order_id):
 @staff_required
 @require_POST
 def change_status(request, order_id):
-    order = get_object_or_404(FoodOrder, pk=order_id)
+    order = get_object_or_404(visible_orders(request.user), pk=order_id)
     new_status = request.POST.get("status", "")
 
     if new_status not in STATUSES:
@@ -121,14 +130,15 @@ def change_status(request, order_id):
 
 @staff_required
 def menu(request):
-    items = FoodItem.objects.order_by("category", "name")
+    items = (FoodItem.objects.filter(restaurant__in=restaurants_for(request.user))
+             .select_related("restaurant", "category").order_by("restaurant__name", "name"))
     return render(request, "staff/menu.html", {"items": items})
 
 
 @staff_required
 @require_POST
 def toggle_availability(request, item_id):
-    item = get_object_or_404(FoodItem, pk=item_id)
+    item = get_object_or_404(FoodItem.objects.filter(restaurant__in=restaurants_for(request.user)), pk=item_id)
     item.is_available = not item.is_available
     item.save(update_fields=["is_available"])
     messages.success(request, _("Availability changed."))

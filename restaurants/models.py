@@ -15,8 +15,11 @@ class Category(models.Model):
 
 
 class Restaurant(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
                               related_name='restaurants')
+    # Employees (group "Restaurant staff") who process this restaurant's orders
+    staff = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True,
+                                   related_name='staff_restaurants')
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     cuisine = models.CharField(max_length=100, blank=True)
@@ -34,7 +37,7 @@ class Restaurant(models.Model):
 
 
 class FoodItem(models.Model):
-    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='food_items')
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.PROTECT, related_name='food_items')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name='food_items')
     name = models.CharField(max_length=150)
@@ -45,6 +48,10 @@ class FoodItem(models.Model):
 
     class Meta:
         ordering = ['name']
+        constraints = [
+            models.CheckConstraint(condition=models.Q(price__gt=0),
+                                   name='restaurants_fooditem_price_positive'),
+        ]
 
     def __str__(self):
         return f'{self.name} - {self.restaurant.name}'
