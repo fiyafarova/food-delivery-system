@@ -93,8 +93,48 @@
     scroll-margin-top: 1rem;
   }
 
-  .home .discovery-heading {
+  .home .discovery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .75rem 1.5rem;
     margin-bottom: 1rem;
+  }
+
+  .home .budget-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    margin-left: auto;
+    min-height: 44px;
+    padding: .625rem 1.25rem;
+    border: 1px solid var(--bb-orange);
+    border-radius: 999px;
+    background: var(--bb-peach);
+    color: var(--bb-orange-dark);
+    text-decoration: none;
+    font-weight: 600;
+    transition: background .15s ease, color .15s ease;
+  }
+
+  .home .budget-link:hover {
+    background: var(--bb-orange);
+    color: #fff;
+  }
+
+  .home .budget-link:focus-visible {
+    outline: 3px solid var(--bb-orange);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home .budget-link { transition: none; }
+  }
+
+  .home .discovery-heading {
+    margin-bottom: 0;
     font-family: var(--bb-display);
     font-size: clamp(1.5rem, 3vw, 2.25rem);
     font-weight: 800;
@@ -515,7 +555,10 @@
 
   <section class="discovery" id="restaurants">
     {% get_current_language as home_language %}
-    <h2 class="discovery-heading">{% trans "What are you craving today?" %}</h2>
+    <div class="discovery-header">
+      <h2 class="discovery-heading">{% trans "What are you craving today?" %}</h2>
+      <a class="budget-link" href="{% url 'customer:budget' %}">{% trans "Meal by budget" %} <span aria-hidden="true">→</span></a>
+    </div>
     <div class="discovery-filters">
       <div class="categories" aria-label="{% trans "Restaurant categories" %}">
         {% if restaurants %}

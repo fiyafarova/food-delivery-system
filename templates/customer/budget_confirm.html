@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% trans "Replace cart?" %} — BiteBox{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/budget.css' %}">
+<div class="budget-page">
+  <a class="budget-back" href="{% url 'customer:budget' %}">← {% trans "Meal by budget" %}</a>
+  <header class="budget-heading"><h1>{% trans "Replace cart?" %}</h1><p>{% blocktrans with name=restaurant.name %}Your cart already contains dishes. Replace them with the selected set from {{ name }}?{% endblocktrans %}</p></header>
+  <form method="post" action="{% url 'customer:budget' %}">{% csrf_token %}<input type="hidden" name="bundle" value="{{ bundle }}"><input type="hidden" name="replace" value="1"><button class="budget-primary" type="submit">{% trans "Replace with this set" %}</button> <a class="budget-back" href="{% url 'customer:cart' %}">{% trans "Keep my cart" %}</a></form>
+</div>
+{% endblock %}

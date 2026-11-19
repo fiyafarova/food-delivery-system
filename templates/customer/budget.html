@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% trans "Meal by budget" %} — BiteBox{% endblock %}
+{% block content %}
+{% get_current_language as budget_language %}
+<link rel="stylesheet" href="{% static 'css/budget.css' %}">
+<div class="budget-page">
+  <header class="budget-heading">
+    <div class="budget-heading-row">
+      <h1>{% trans "Your lunch. Your budget." %}</h1>
+      <a class="budget-back" href="{% url 'customer:menu' %}">← {% trans "Restaurants" %}</a>
+    </div>
+    <p>{% trans "Choose what you want to eat. We will find sets from one restaurant within your budget." %}</p>
+  </header>
+  <form class="budget-filter" method="get" action="{% url 'customer:budget' %}">
+    <div class="budget-top">
+      <div>
+        <label for="meal-budget">{% trans "Budget, ₸" %}</label>
+        <div class="budget-amount">
+          <input id="meal-budget" name="budget" type="number" min="1" max="1000000" step="any" placeholder="3500" value="{{ budget }}" required {% if error %}aria-describedby="budget-error"{% endif %}>
+          <button type="button" data-budget-step="-500" aria-label="{% if budget_language == 'ru' %}Уменьшить бюджет на 500 тенге{% else %}Decrease budget by 500 tenge{% endif %}">−</button>
+          <button type="button" data-budget-step="500" aria-label="{% if budget_language == 'ru' %}Увеличить бюджет на 500 тенге{% else %}Increase budget by 500 tenge{% endif %}">+</button>
+        </div>
+      </div>
+      <div>
+        <label for="meal-cuisine">{% trans "Cuisine" %}</label>
+        <select id="meal-cuisine" name="cuisine">
+          <option value="">{% trans "All cuisines" %}</option>
+          {% for value in cuisines %}<option value="{{ value }}" {% if cuisine == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="budget-primary" type="submit">{% trans "Find my lunch" %} <span aria-hidden="true">→</span></button>
+    </div>
+    <fieldset>
+      <legend>{% trans "What goes in your set?" %}</legend>
+      <div class="budget-parts">
+        {% for key,label,checked in choices %}
+        <label><input type="checkbox" name="part" value="{{ key }}" {% if checked %}checked{% endif %}><span>{{ label }}</span></label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <p class="budget-note">{% blocktrans %}One item per selected category. Delivery preview uses a test fee of {{ fee }} per restaurant.{% endblocktrans %}</p>
+    {% if error %}<p class="budget-error" id="budget-error" role="alert">{{ error }}</p>{% endif %}
+  </form>
+  {% if submitted and not error %}
+  <section class="budget-results" aria-label="{% trans 'Matching sets' %}">
+    <div class="budget-results-heading"><h2>{% trans "Sets within your budget" %}</h2></div>
+    {% for match in matches %}
+    <article class="budget-set">
+      <header><h3>{{ match.restaurant.name }}</h3><p>{{ match.restaurant.cuisine }}</p></header>
+      <ul>
+        {% for dish in match.dishes %}
+        <li><div><strong>{{ dish.name }}</strong>{% if dish.description %}<p>{{ dish.description|truncatechars:140 }}</p>{% endif %}</div><span>{{ dish.price }}</span></li>
+        {% endfor %}
+      </ul>
+      <div class="budget-delivery"><span>{% trans "Delivery · test fee" %}</span><span>{{ fee }}</span></div>
+      <footer><div><span>{% trans "Total" %}</span><strong>{{ match.total }}</strong></div>
+        <form method="post">{% csrf_token %}<input type="hidden" name="bundle" value="{{ match.token }}"><button class="budget-primary" type="submit">{% trans "Add set to cart" %}</button></form>
+      </footer>
+    </article>
+    {% empty %}
+    <div class="budget-empty"><h3>{% trans "No sets fit these settings yet" %}</h3><p>{% trans "Try a larger budget, another cuisine or fewer meal categories." %}</p></div>
+    {% endfor %}
+    {% if previous or next %}<nav class="budget-pagination" aria-label="{% trans 'Result pages' %}">{% if previous %}<a href="{{ previous }}">← {% trans "Previous" %}</a>{% endif %}{% if next %}<a href="{{ next }}">{% trans "More sets" %} →</a>{% endif %}</nav>{% endif %}
+  </section>
+  {% else %}{% if not submitted %}
+  <div class="budget-intro"><h2>{% trans "A meal that fits your plans" %}</h2></div>
+  {% endif %}{% endif %}
+  <p class="budget-note">{% trans "Restaurant delivery tariffs and minimum orders are not configured yet. The final order currently saves food prices only; confirm delivery with the restaurant." %}</p>
+</div>
+<script>
+(() => {
+  const input = document.getElementById("meal-budget");
+  function changeBudget(amount) {
+    const value = input.value === "" ? 3500 : Number(input.value);
+    input.value = String(Math.round(Math.min(1000000, Math.max(1, value + amount)) * 100) / 100);
+    input.dispatchEvent(new Event("input", {bubbles: true}));
+  }
+  for (const button of document.querySelectorAll("[data-budget-step]")) {
+    button.addEventListener("click", () => changeBudget(Number(button.dataset.budgetStep)));
+  }
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+      changeBudget(event.key === "ArrowUp" ? 500 : -500);
+    }
+  });
+})();
+</script>
+{% endblock %}
