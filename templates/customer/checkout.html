@@ -82,9 +82,13 @@
 
 <div class="bb-checkout" id="checkout-page"
      data-update-url="{% url 'customer:cart_update' %}" data-cart-url="{% url 'customer:cart' %}"
+     data-create-url="{% url 'create_order' %}"
+     data-order-url="{% url 'customer:order_status' 0 %}"
+     data-login-url="{% url 'customer:login' %}?next={% url 'customer:checkout' %}"
+     data-submit-error="{% trans 'Could not place the order. Please try again.' %}"
      data-update-error="{% trans 'Could not update the cart' %}"
      data-subtotal-minor="{{ cart.subtotal_minor|stringformat:'d' }}"
-     {% if cart.total_minor != None %}data-total-minor="{{ cart.total_minor|stringformat:'d' }}"{% endif %}>
+     data-total-minor="{{ cart.subtotal_minor|stringformat:'d' }}">
     <header class="checkout-header">
         <a class="d-inline-block mb-2 fw-semibold text-decoration-none" href="{% url 'customer:cart' %}">← {% trans "Cart" %}</a>
         <h1 class="mb-0">{% if checkout_language == "ru" %}Оформление заказа{% else %}Checkout{% endif %}</h1>
@@ -162,7 +166,7 @@
                 <h2 class="h5 mb-3">{% if checkout_language == "ru" %}Промокод{% else %}Promo code{% endif %}</h2>
                 <form id="checkout-promo-form"
                       data-success="{% if checkout_language == 'ru' %}Тестовый промокод применён.{% else %}Test promo code applied.{% endif %}"
-                      data-invalid="{% if checkout_language == 'ru' %}Промокод не найден.{% else %}Promo code not found.{% endif %}">
+                      data-invalid="{% trans "Promo codes are not available yet." %}">
                     <label for="checkout-promo" class="visually-hidden">{% if checkout_language == "ru" %}Промокод{% else %}Promo code{% endif %}</label>
                     <div class="d-flex flex-wrap gap-2">
                         <input class="form-control w-auto flex-grow-1" id="checkout-promo" type="text"
@@ -172,7 +176,7 @@
                         <button class="btn checkout-submit" type="submit">{% if checkout_language == "ru" %}Применить{% else %}Apply{% endif %}</button>
                     </div>
                     <p class="text-muted small mt-2 mb-0" id="checkout-promo-hint">
-                        {% if checkout_language == "ru" %}Тестовый код BITE10 даёт скидку 10% на блюда.{% else %}Use test code BITE10 for 10% off dishes.{% endif %}
+                        {% trans "Promo codes are not available yet." %}
                     </p>
                     <p class="small mt-2 mb-0" id="checkout-promo-status" role="status" hidden></p>
                 </form>
@@ -189,24 +193,25 @@
                     </div>
                     <div class="d-flex justify-content-between gap-3">
                         <dt class="fw-normal">{% trans "Delivery" %}</dt>
-                        <dd class="mb-0">{% if cart.delivery_display %}{{ cart.delivery_display }}{% else %}—{% endif %}</dd>
+                        <dd class="mb-0">{% trans "Confirmed by the restaurant" %}</dd>
                     </div>
                     <div class="d-flex justify-content-between gap-3 mt-2 d-none" id="checkout-discount-row">
                         <dt class="fw-normal">{% if checkout_language == "ru" %}Скидка{% else %}Discount{% endif %}</dt>
                         <dd class="mb-0" id="checkout-discount"></dd>
                     </div>
-                    {% if cart.total_display %}
+                    {% if cart.subtotal_display %}
                     <div class="checkout-total d-flex justify-content-between gap-3 mt-3 pt-3 fs-5 fw-bold">
                         <dt>{% trans "Total to pay" %}</dt>
-                        <dd class="mb-0" id="checkout-payable">{{ cart.total_display }}</dd>
+                        <dd class="mb-0" id="checkout-payable">{{ cart.subtotal_display }}</dd>
                     </div>
                     {% endif %}
                 </dl>
-                <button class="btn checkout-submit w-100" type="button" disabled>
+                <button class="btn checkout-submit w-100" id="place-order" type="button"{% if cart.lines.0.id < 0 %} disabled{% endif %}>
                     {% if checkout_language == "ru" %}Разместить заказ{% else %}Place order{% endif %}
                 </button>
+                <p id="place-order-error" class="text-danger mt-2" role="alert" hidden></p>
                 <p class="checkout-note rounded-3 p-3 small mt-3 mb-0">
-                    {% if checkout_language == "ru" %}Отправка заказа пока не подключена.{% else %}Order submission is not available yet.{% endif %}
+                    {% if cart.lines.0.id < 0 %}{% trans "Demo dishes cannot be ordered. Choose a dish from a restaurant." %}{% else %}{% trans "The order will be sent to the restaurant. Online payment is not connected." %}{% endif %}
                 </p>
             </div>
         </aside>
@@ -264,7 +269,7 @@
 
         promoForm.addEventListener("submit", (event) => {
             event.preventDefault();
-            const valid = promoInput.value.trim().toUpperCase() === "BITE10";
+            const valid = false;
             promoApplied = valid;
             promoInput.toggleAttribute("aria-invalid", !valid);
             promoStatus.hidden = false;
@@ -284,10 +289,48 @@
         const updateError = document.getElementById("checkout-items-error");
         const quantityButtons = Array.from(items.querySelectorAll("[data-checkout-step]"));
         let updating = false;
+        let submitting = false;
+        const placeOrder = document.getElementById("place-order");
+        const orderError = document.getElementById("place-order-error");
+
+        placeOrder.addEventListener("click", async () => {
+            if (submitting || updating) return;
+            const phone = document.getElementById("checkout-phone");
+            const address = document.getElementById("checkout-address");
+            phone.required = true;
+            address.required = true;
+            if (!phone.reportValidity() || !address.reportValidity()) return;
+            submitting = true;
+            placeOrder.disabled = true;
+            orderError.hidden = true;
+            try {
+                const response = await fetch(checkout.dataset.createUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector("#checkout-draft [name=csrfmiddlewaretoken]").value
+                    },
+                    body: JSON.stringify({phone: phone.value.trim(), address: address.value.trim()})
+                });
+                if (response.status === 401) {
+                    window.location.assign(checkout.dataset.loginUrl);
+                    return;
+                }
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || checkout.dataset.submitError);
+                window.location.assign(checkout.dataset.orderUrl.replace("/0/", "/" + result.order_id + "/"));
+            } catch (error) {
+                orderError.textContent = error.message || checkout.dataset.submitError;
+                orderError.hidden = false;
+                submitting = false;
+                placeOrder.disabled = false;
+            }
+        });
+
 
         items.addEventListener("click", async (event) => {
             const button = event.target.closest("[data-checkout-step]");
-            if (!button || updating) return;
+            if (!button || updating || submitting) return;
             const row = button.closest("[data-checkout-dish]");
             const quantity = row.querySelector("[data-checkout-quantity]");
             const id = row.dataset.checkoutDish;
@@ -318,7 +361,7 @@
                     row.remove();
                 }
                 subtotal = result.subtotal_minor;
-                total = result.total_minor;
+                total = result.subtotal_minor;
                 document.getElementById("checkout-subtotal").textContent = result.subtotal;
                 document.querySelectorAll("[data-cart-count]").forEach((badge) => {
                     badge.textContent = result.count;
