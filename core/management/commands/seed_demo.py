@@ -10,7 +10,8 @@ so that every order is from one restaurant (the cart rule):
                   order 4: Lagman (cancelled)                     = 2100
     Urban Burger  order 3: Cheeseburger + French Fries + Cola     = 3300
 
-Restaurants belong to owner_demo; staff_demo (if it exists) works in all of them.
+Restaurants belong to owner_demo. Demo employees (if they exist) get their restaurants:
+staff_demo -> Casa Pizza, staff2_demo -> Urban Burger + Dastarkhan.
 customer_demo / customer2_demo (if they exist) get the orders of Aigerim / Dias.
 Safe to run again: existing rows are reused, nothing is duplicated.
 """
@@ -75,14 +76,11 @@ class Command(BaseCommand):
         if created:
             owner.set_unusable_password()  # create_demo_users gives it a password
             owner.save()
-        staff_user = User.objects.filter(username="staff_demo").first()
 
         dishes = {}
         for name, (cuisine, address, menu) in RESTAURANTS.items():
             restaurant, _ = Restaurant.objects.get_or_create(
                 name=name, defaults={"owner": owner, "cuisine": cuisine, "address": address, "city": "Almaty"})
-            if staff_user:
-                restaurant.staff.add(staff_user)
             for dish_name, price, category_name, available in menu:
                 category, _ = Category.objects.get_or_create(name=category_name)
                 dish, _ = FoodItem.objects.get_or_create(
@@ -95,9 +93,11 @@ class Command(BaseCommand):
             customers[phone], _ = Customer.objects.get_or_create(
                 phone=phone, defaults={"name": name, "address": address})
 
-        from staff.management.commands.create_demo_users import link_demo_customer
+        from staff.management.commands.create_demo_users import link_demo_customer, link_demo_staff
         for demo_user in User.objects.filter(username__in=["customer_demo", "customer2_demo"]):
             link_demo_customer(demo_user)
+        for demo_user in User.objects.filter(username__in=["staff_demo", "staff2_demo"]):
+            link_demo_staff(demo_user)
 
         new_orders = 0
         for phone, restaurant_name, status, date, lines in ORDERS:
