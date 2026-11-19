@@ -4,9 +4,12 @@ from django.views.generic import RedirectView
 
 from . import cart_views, views
 
+from .budget import budget_meals
+
 app_name = "customer"
 
 urlpatterns = [
+    path("budget/", budget_meals, name="budget"),
     path("", RedirectView.as_view(pattern_name="customer:menu", permanent=False)),
     path("menu/", views.menu, name="menu"),
     path("cart/", cart_views.cart_page, name="cart"),

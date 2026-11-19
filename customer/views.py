@@ -38,6 +38,7 @@ CHECKOUT_DRAFT_KEY = "checkout_draft"
 CHECKOUT_FIELD_LIMITS = {"city": 100, "phone": 20, "address": 255, "comment": 500}
 
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def checkout(request):
     cart = build_cart(request)
