@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.models import Customer, FoodOrder, OrderItem
@@ -214,6 +214,7 @@ class StaffAccessTests(TestCase):
         self.assertRedirects(response, reverse("staff:orders"))
 
 
+@override_settings(DEBUG=True)  # create_demo_users runs only with DEBUG on
 class DemoUsersCommandTests(TestCase):
     def test_command_creates_staff_and_normal_user(self):
         from django.core.management import call_command
