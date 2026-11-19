@@ -23,9 +23,8 @@ python manage.py migrate
 # 4. Demo data: 3 restaurants, 11 dishes, 4 customers, 4 orders (safe to run again)
 python manage.py seed_demo
 
-# 5. Demo accounts for every role (choose any password, min. 8 characters)
-#    staff_demo becomes staff of the demo restaurants, owner_demo owns them
-python manage.py create_demo_users --password <choose-a-password>
+# 5. Demo accounts for every role (see "Demo accounts" below), password: BiteBox-demo-2026
+python manage.py create_demo_users
 
 # 6. Start the server
 python manage.py runserver
@@ -82,16 +81,34 @@ Run the tests: `python manage.py test`
 - Placing an order (`POST /core/orders/create/`) needs a logged-in customer.
 - Changing order status, payment status and delivery: only staff / owner / admin of the order's restaurant.
 
+## Demo accounts
+
+Created by `python manage.py create_demo_users` (restaurants and orders by `python manage.py seed_demo`).
+**Password for all of them: `BiteBox-demo-2026`** (or the one you pass with `--password`).
+⚠️ Local demo only: the command refuses to run when `DEBUG` is off.
+
+| Login | Who | Log in at | Sees / can do |
+|---|---|---|---|
+| `customer_demo` | Customer Aigerim | `/login/` | own orders #1 (Casa Pizza, 6200) and #4 (Dastarkhan, 2100, cancelled); cart, favorites, profile; `/staff/` → 403 |
+| `customer2_demo` | Customer Dias | `/login/` | only own order #2 (Dastarkhan, 4000): shows that customers cannot see each other's orders |
+| `staff_demo` | Employee of **Casa Pizza** | `/staff/login/` | orders and menu of Casa Pizza only: change status, dish availability; no "Team" / "Managers" |
+| `staff2_demo` | Employee of **Urban Burger + Dastarkhan** | `/staff/login/` | orders and menu of these two restaurants only |
+| `owner_demo` | Manager, owner of all 3 demo restaurants | `/staff/login/` | everything an employee can, for all 3 restaurants + "Team": register / remove employees |
+| `admin_demo` | Administrator (superuser) | `/staff/login/`, `/admin/` | all restaurants and orders + "Managers": register managers with a restaurant + Django admin |
+
+New accounts you create during a demo (customer on `/register/`, employee on "Team", manager on
+"Managers") are not in this list: employees and managers must change their temporary password first.
+
 ## Users, roles and passwords
 
 All users are stored in one table, `accounts_user` (custom model `accounts.User`).
 
-| Role | Demo account | How the role is stored | Can do |
-|---|---|---|---|
-| Customer | `customer_demo`, `customer2_demo` | `role = "customer"` (default) + linked `Customer` | own orders only; `/staff/` → 403 |
-| Employee (restaurant staff) | `staff_demo` | group **"Restaurant staff"** | `/staff/` pages |
-| Manager (restaurant owner) | `owner_demo` | `role = "owner"` | `/staff/` pages, create/edit own restaurants and dishes via API |
-| Administrator | `admin_demo` | `role = "admin"` + superuser | everything, including `/admin/` |
+| Role | How the role is stored | Can do |
+|---|---|---|
+| Customer | `role = "customer"` (default) + linked `Customer` | own orders only; `/staff/` → 403 |
+| Employee (restaurant staff) | group **"Restaurant staff"** + *Restaurant → staff* | `/staff/` pages of their restaurants |
+| Manager (restaurant owner) | `role = "owner"` | `/staff/` pages of own restaurants, "Team", restaurants and dishes via API |
+| Administrator | `role = "admin"` + superuser | everything, including "Managers" and `/admin/` |
 
 - **Registration** — who registers whom:
 
