@@ -11,7 +11,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import IntegrityError, transaction
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from django.core.exceptions import ValidationError
@@ -244,6 +244,7 @@ class DatabaseRulesTests(TestCase):
             self.pizza.delete()
 
 
+@override_settings(DEBUG=True)  # create_demo_users runs only with DEBUG on
 class SeedDemoTests(TestCase):
     def test_seed_demo_creates_darya_orders_and_can_run_twice(self):
         call_command("seed_demo", stdout=open("/dev/null", "w"))
@@ -260,3 +261,28 @@ class SeedDemoTests(TestCase):
             "Urban Burger Placed": Decimal("3300.00"),
             "Dastarkhan Cancelled": Decimal("2100.00"),
         })
+
+    def staff_view(self, username):
+        client = Client()
+        client.force_login(get_user_model().objects.get(username=username))
+        orders = client.get(reverse("staff:orders")).context["orders"]
+        return sorted(o["restaurant"] for o in orders)
+
+    def test_each_demo_employee_sees_only_their_restaurants(self):
+        call_command("create_demo_users", stdout=open("/dev/null", "w"))  # users first ...
+        call_command("seed_demo", stdout=open("/dev/null", "w"))          # ... then data: order does not matter
+        User = get_user_model()
+        self.assertEqual({r.name for r in User.objects.get(username="staff_demo").staff_restaurants.all()},
+                         {"Casa Pizza"})
+        self.assertEqual({r.name for r in User.objects.get(username="staff2_demo").staff_restaurants.all()},
+                         {"Urban Burger", "Dastarkhan"})
+        self.assertEqual(self.staff_view("staff_demo"), ["Casa Pizza"])
+        self.assertEqual(self.staff_view("staff2_demo"), ["Dastarkhan", "Dastarkhan", "Urban Burger"])
+        self.assertEqual(len(self.staff_view("owner_demo")), 4)
+        self.assertEqual(len(self.staff_view("admin_demo")), 4)
+        self.assertTrue(User.objects.get(username="admin_demo").check_password("BiteBox-demo-2026"))
+
+    def test_demo_users_refused_when_debug_is_off(self):
+        from django.core.management.base import CommandError
+        with override_settings(DEBUG=False), self.assertRaises(CommandError):
+            call_command("create_demo_users", stdout=open("/dev/null", "w"))
