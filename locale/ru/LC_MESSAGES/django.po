@@ -1,5 +1,9 @@
+#
 msgid ""
-msgstr "Language: ru\nContent-Type: text/plain; charset=UTF-8\nPlural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+msgstr ""
+"Language: ru\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 
 msgid "Menu"
 msgstr "Меню"
@@ -136,8 +140,12 @@ msgstr "Оформление заказа пока не подключено."
 msgid "Your cart is empty"
 msgstr "Корзина пуста"
 
-msgid "Add dishes from a restaurant to start your order. You can change it at any time."
-msgstr "Добавьте блюда из ресторана, и заказ появится здесь. Его можно изменить в любой момент."
+msgid ""
+"Add dishes from a restaurant to start your order. You can change it at any "
+"time."
+msgstr ""
+"Добавьте блюда из ресторана, и заказ появится здесь. Его можно изменить в "
+"любой момент."
 
 msgid "No favorite dishes yet"
 msgstr "В избранном пока нет блюд"
@@ -298,7 +306,9 @@ msgstr "Не удалось добавить блюдо"
 msgid "Added ✓"
 msgstr "Добавлено ✓"
 
-msgid "Your cart contains dishes from “{current}”. Replace them with dishes from “{next}”?"
+msgid ""
+"Your cart contains dishes from “{current}”. Replace them with dishes from "
+"“{next}”?"
 msgstr "В корзине блюда из «{current}». Заменить корзину блюдами из «{next}»?"
 
 msgid "Restaurant:"
@@ -345,3 +355,383 @@ msgstr "Роллы"
 
 msgid "Sets"
 msgstr "Сеты"
+
+msgid "Access denied"
+msgstr "Доступ запрещён"
+
+msgid "All my orders"
+msgstr "Все мои заказы"
+
+msgid "Already have an account?"
+msgstr "Уже есть аккаунт?"
+
+msgid "Available"
+msgstr "Доступно"
+
+msgid "Back to orders"
+msgstr "К заказам"
+
+msgid "Change password"
+msgstr "Изменить пароль"
+
+msgid "Change status"
+msgstr "Изменить статус"
+
+msgid "Confirmed by the restaurant"
+msgstr "Уточняется рестораном"
+
+msgid "Could not place the order. Please try again."
+msgstr "Не удалось оформить заказ. Попробуйте ещё раз."
+
+msgid "Create account"
+msgstr "Создать аккаунт"
+
+msgid ""
+"Creates the manager account (role: restaurant owner) and their restaurant."
+msgstr "Создаёт аккаунт управляющего с ролью владельца и его ресторан."
+
+msgid "Customer"
+msgstr "Покупатель"
+
+msgid "Date"
+msgstr "Дата"
+
+msgid "Dish"
+msgstr "Блюдо"
+
+msgid "Email"
+msgstr "Электронная почта"
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "Log in"
+msgstr "Войти"
+
+msgid "Make available"
+msgstr "Сделать доступным"
+
+msgid "Make unavailable"
+msgstr "Сделать недоступным"
+
+msgid "Managers"
+msgstr "Управляющие"
+
+msgid "Menu availability"
+msgstr "Доступность блюд"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "New to BiteBox?"
+msgstr "Впервые в BiteBox?"
+
+msgid "No"
+msgstr "Нет"
+
+msgid "No employees yet."
+msgstr "Сотрудников пока нет."
+
+msgid "No managers yet."
+msgstr "Управляющих пока нет."
+
+msgid "No orders with this status."
+msgstr "Заказов с этим статусом нет."
+
+msgid "Order"
+msgstr "Заказ"
+
+msgid "Order status"
+msgstr "Статус заказа"
+
+msgid "Orders"
+msgstr "Заказы"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Price"
+msgstr "Цена"
+
+msgid "Promo codes are not available yet."
+msgstr "Промокоды пока недоступны."
+
+msgid "Quantity"
+msgstr "Количество"
+
+msgid "Register a manager"
+msgstr "Добавить управляющего"
+
+msgid "Register an employee"
+msgstr "Добавить сотрудника"
+
+msgid "Register employee"
+msgstr "Добавить сотрудника"
+
+msgid "Register manager"
+msgstr "Добавить управляющего"
+
+msgid "Restaurant staff:"
+msgstr "Сотрудникам ресторана:"
+
+msgid "Restaurants"
+msgstr "Рестораны"
+
+msgid "Sign up"
+msgstr "Зарегистрироваться"
+
+msgid "Staff login"
+msgstr "Вход для сотрудников"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Team"
+msgstr "Команда"
+
+msgid ""
+"The employee logs in at the staff login page with this temporary password "
+"and must change it."
+msgstr ""
+"Сотрудник входит через страницу входа для сотрудников с временным паролем и "
+"затем меняет его."
+
+msgid ""
+"The order will be sent to the restaurant. Online payment is not connected."
+msgstr "Заказ будет отправлен в ресторан. Онлайн-оплата пока не подключена."
+
+msgid "This order is final: its status cannot be changed."
+msgstr "Заказ завершён. Изменить статус нельзя."
+
+msgid "This order was cancelled."
+msgstr "Заказ отменён."
+
+msgid "This page is only for restaurant staff."
+msgstr "Эта страница доступна только сотрудникам ресторана."
+
+msgid "Toggle navigation"
+msgstr "Открыть или закрыть меню"
+
+msgid "Total"
+msgstr "Итого"
+
+msgid "Username"
+msgstr "Имя пользователя"
+
+msgid "Wrong username or password."
+msgstr "Неверное имя пользователя или пароль."
+
+msgid "Yes"
+msgstr "Да"
+
+msgid "You are logged in as"
+msgstr "Вы вошли как"
+
+msgid ""
+"You are using a temporary password. Please set your own password to "
+"continue."
+msgstr ""
+"Вы используете временный пароль. Задайте собственный пароль, чтобы "
+"продолжить."
+
+msgid ""
+"You do not have a restaurant yet. An administrator creates it on the "
+"Managers page."
+msgstr ""
+"У вас пока нет ресторана. Администратор может создать его в разделе "
+"управляющих."
+
+msgid "optional"
+msgstr "необязательно"
+
+msgid "staff login"
+msgstr "вход для сотрудников"
+
+msgid "Placed"
+msgstr "Принят"
+
+msgid "Preparing"
+msgstr "Готовится"
+
+msgid "Delivered"
+msgstr "Доставлен"
+
+msgid "Cancelled"
+msgstr "Отменён"
+
+msgid "Demo dishes cannot be ordered. Choose a dish from a restaurant."
+msgstr "Тестовые блюда нельзя заказать. Выберите блюдо из ресторана."
+
+msgid "Availability changed."
+msgstr "Доступность блюда изменена."
+
+msgid "Cuisine"
+msgstr "Кухня"
+
+msgid ""
+"Employee %(name)s registered. Give them the temporary password; they will "
+"have to change it at first login."
+msgstr ""
+"Сотрудник %(name)s добавлен. Передайте ему временный пароль, который нужно "
+"изменить при первом входе."
+
+msgid "Employee %(name)s removed from %(restaurant)s."
+msgstr "Сотрудник %(name)s удалён из ресторана %(restaurant)s."
+
+msgid "Manager %(name)s registered with restaurant %(restaurant)s."
+msgstr "Управляющий %(name)s добавлен в ресторан %(restaurant)s."
+
+msgid "Order status changed."
+msgstr "Статус заказа изменён."
+
+msgid "Repeat password"
+msgstr "Повторите пароль"
+
+msgid "Restaurant address"
+msgstr "Адрес ресторана"
+
+msgid "Restaurant name"
+msgstr "Название ресторана"
+
+msgid "Temporary password"
+msgstr "Временный пароль"
+
+msgid "The two passwords do not match."
+msgstr "Пароли не совпадают."
+
+msgid "This email is already in use."
+msgstr "Эта электронная почта уже используется."
+
+msgid "This status change is not allowed."
+msgstr "Такое изменение статуса запрещено."
+
+msgid "This username is already taken."
+msgstr "Это имя пользователя уже занято."
+
+msgid "Unknown status."
+msgstr "Неизвестный статус."
+
+msgid "Welcome to BiteBox!"
+msgstr "Добро пожаловать в BiteBox!"
+
+msgid "Your password has been changed."
+msgstr "Ваш пароль изменён."
+
+msgid "Meal by budget"
+msgstr "Обед по бюджету"
+
+msgid "Your lunch. Your budget."
+msgstr "Ваш обед. Ваш бюджет."
+
+msgid ""
+"Choose what you want to eat. We will find sets from one restaurant within "
+"your budget."
+msgstr ""
+"Выберите состав обеда — мы найдём подходящие сочетания в меню ресторанов."
+
+msgid "Budget, ₸"
+msgstr "Бюджет, ₸"
+
+msgid "All cuisines"
+msgstr "Любая кухня"
+
+msgid "Find my lunch"
+msgstr "Подобрать обед"
+
+msgid "What goes in your set?"
+msgstr "Что включить в обед?"
+
+msgid "Main dish"
+msgstr "Основное блюдо"
+
+msgid "Drink"
+msgstr "Напиток"
+
+msgid "Snack"
+msgstr "Закуска"
+
+msgid "Dessert"
+msgstr "Десерт"
+
+msgid ""
+"One item per selected category. Delivery preview uses a test fee of %(fee)s "
+"per restaurant."
+msgstr ""
+"По одной позиции из каждой выбранной категории. Для подбора используется "
+"тестовый тариф доставки — %(fee)s за ресторан."
+
+msgid "Matching sets"
+msgstr "Подходящие наборы"
+
+msgid "Sets within your budget"
+msgstr "Наборы в пределах бюджета"
+
+msgid "Food + delivery"
+msgstr "Блюда + доставка"
+
+msgid "Delivery · test fee"
+msgstr "Доставка · тестовый тариф"
+
+msgid "Add set to cart"
+msgstr "Добавить набор"
+
+msgid "No sets fit these settings yet"
+msgstr "Подходящих наборов пока нет"
+
+msgid "Try a larger budget, another cuisine or fewer meal categories."
+msgstr ""
+"Попробуйте увеличить бюджет, выбрать другую кухню или убрать одну из "
+"категорий."
+
+msgid "Result pages"
+msgstr "Страницы результатов"
+
+msgid "Previous"
+msgstr "Назад"
+
+msgid "More sets"
+msgstr "Ещё наборы"
+
+msgid "A meal that fits your plans"
+msgstr "Соберите обед под свои планы"
+
+msgid ""
+"Start with a main dish, add a drink or dessert. Every result includes the "
+"full set and a delivery estimate."
+msgstr ""
+"Начните с основного блюда, добавьте напиток или десерт. В каждом результате "
+"— состав набора и ориентировочная доставка."
+
+msgid ""
+"Restaurant delivery tariffs and minimum orders are not configured yet. The "
+"final order currently saves food prices only; confirm delivery with the "
+"restaurant."
+msgstr ""
+"Тарифы доставки и минимальная сумма заказа ресторанов пока не настроены. При"
+" оформлении сохраняется стоимость блюд; доставку необходимо уточнить у "
+"ресторана."
+
+msgid "Replace cart?"
+msgstr "Заменить содержимое корзины?"
+
+msgid ""
+"Your cart already contains dishes. Replace them with the selected set from "
+"%(name)s?"
+msgstr "В корзине уже есть блюда. Заменить их выбранным набором из %(name)s?"
+
+msgid "Replace with this set"
+msgstr "Заменить выбранным набором"
+
+msgid "Keep my cart"
+msgstr "Оставить мою корзину"
+
+msgid "This set has changed or expired. Please select it again."
+msgstr "Набор изменился или устарел. Подберите его ещё раз."
+
+msgid "Choose at least one part of your meal."
+msgstr "Выберите хотя бы одну категорию."
+
+msgid ""
+"Enter a budget between 1 and 1,000,000 tenge, with up to two decimal places."
+msgstr ""
+"Введите бюджет от 1 до 1 000 000 тенге, не более двух знаков после запятой."
