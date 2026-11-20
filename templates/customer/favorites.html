@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n food_labels %}
 
 {% block title %}{% trans "Favorites" %} — BiteBox{% endblock %}
 
@@ -31,6 +31,8 @@
     </div>
 </div>
 
+{% food_name_translations as food_names %}
+{{ food_names|json_script:"food-name-translations" }}
 <script src="{% static 'js/favorites.js' %}"
         data-add='{% trans "Add to favorites" %}'
         data-remove-heart='{% trans "Remove from favorites" %}'

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n l10n %}
+{% load static i18n l10n food_labels %}
 
 {% block title %}{% trans "Home" %} — BiteBox{% endblock %}
 
@@ -629,7 +629,7 @@
                   {% for dish in restaurant.food_items.all %}
                     <li class="py-2 border-bottom" data-menu-cart-dish="{{ dish.pk|unlocalize }}" data-menu-category="{{ dish.category.name|default_if_none:'' }}">
                       <div class="restaurant-menu-photo" aria-hidden="true"></div>
-                      <span><span data-menu-dish-name>{{ dish.name }}</span> — {{ dish.price|floatformat:2 }} ₸</span>
+                      <span><span data-menu-dish-name>{{ dish.name|food_label }}</span> — {{ dish.price|floatformat:2 }} ₸</span>
                       <div class="restaurant-dish-actions d-flex flex-wrap gap-2">
                         {% if dish.is_available %}
                           <button type="button" class="btn btn-sm btn-dark js-add-to-cart"
@@ -648,7 +648,7 @@
                                 data-fav-id="food-{{ dish.pk|unlocalize }}"
                                 data-restaurant-key="restaurant-{{ restaurant.pk|unlocalize }}"
                                 data-description="{{ dish.description }}"
-                                data-name="{{ dish.name }}" data-restaurant="{{ restaurant.name }}"
+                                data-name="{{ dish.name|food_label }}" data-restaurant="{{ restaurant.name }}"
                                 data-price="{{ dish.price|unlocalize }}"
                                 aria-pressed="false" aria-label="{% trans 'Add to favorites' %}"></button>
                       </div>

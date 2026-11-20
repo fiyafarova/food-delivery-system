@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n l10n %}
+{% load i18n l10n food_labels %}
 {% block title %}{% if LANGUAGE_CODE == "ru" %}Оформление заказа{% else %}Checkout{% endif %} — BiteBox{% endblock %}
 {% block content %}
 {% get_current_language as checkout_language %}
@@ -138,12 +138,12 @@
                     <div class="checkout-item d-flex flex-wrap align-items-center gap-3 py-3" data-checkout-dish="{{ line.id|unlocalize }}">
                         {% if line.image_url %}<img class="checkout-photo" src="{{ line.image_url }}" alt="">{% endif %}
                         <div class="flex-grow-1">
-                            <div class="fw-semibold">{{ line.name }}</div>
+                            <div class="fw-semibold">{{ line.name|food_label }}</div>
                             <div class="text-muted small">{{ line.price_display }}</div>
                             <div class="checkout-qty mt-2">
-                                <button type="button" data-checkout-step="-1" aria-label="{% trans 'Decrease quantity' %} − {{ line.name }}">−</button>
+                                <button type="button" data-checkout-step="-1" aria-label="{% trans 'Decrease quantity' %} − {{ line.name|food_label }}">−</button>
                                 <span data-checkout-quantity>{{ line.quantity }}</span>
-                                <button type="button" data-checkout-step="1" aria-label="{% trans 'Increase quantity' %} − {{ line.name }}">+</button>
+                                <button type="button" data-checkout-step="1" aria-label="{% trans 'Increase quantity' %} − {{ line.name|food_label }}">+</button>
                             </div>
                         </div>
                         <strong class="text-nowrap" data-checkout-line-total>{{ line.total_display }}</strong>
