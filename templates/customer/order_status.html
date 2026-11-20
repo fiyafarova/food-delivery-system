@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n food_labels %}
 {% block title %}{% trans "Order" %} #{{ order.order_id }} — BiteBox{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -34,7 +34,7 @@
     <tbody>
     {% for line in lines %}
     <tr>
-        <td>{{ line.name }}</td>
+        <td>{{ line.name|food_label }}</td>
         <td>{{ line.unit_price }} ₸</td>
         <td>{{ line.quantity }}</td>
         <td class="text-end">{{ line.total }} ₸</td>

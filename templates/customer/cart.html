@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n food_labels %}
 
 {% block title %}{% trans "Cart" %} — BiteBox{% endblock %}
 
@@ -181,7 +181,7 @@
                         {% for line in cart.lines %}
                         <div class="d-flex gap-3 py-3 border-top" data-line data-dish-id="{{ line.id }}">
                             {% if line.image_url %}
-                            <img class="bb-photo" src="{{ line.image_url }}" alt="{{ line.name }}">
+                            <img class="bb-photo" src="{{ line.image_url }}" alt="{{ line.name|food_label }}">
                             {% else %}
                             <div class="bb-photo bb-photo-empty" aria-hidden="true">BB</div>
                             {% endif %}
@@ -189,7 +189,7 @@
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between gap-2">
                                     <div>
-                                        <div class="fw-bold">{{ line.name }}</div>
+                                        <div class="fw-bold">{{ line.name|food_label }}</div>
                                         <div class="bb-muted small">{{ line.price_display }} {% trans "per serving" %}</div>
                                         {% if not line.available %}
                                         <span class="badge text-bg-danger mt-1">{% trans "Unavailable" %}</span>

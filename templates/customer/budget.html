@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n food_labels %}
 {% block title %}{% trans "Meal by budget" %} — BiteBox{% endblock %}
 {% block content %}
 {% get_current_language as budget_language %}
@@ -50,7 +50,7 @@
       <header><h3>{{ match.restaurant.name }}</h3><p>{{ match.restaurant.cuisine }}</p></header>
       <ul>
         {% for dish in match.dishes %}
-        <li><div><strong>{{ dish.name }}</strong>{% if dish.description %}<p>{{ dish.description|truncatechars:140 }}</p>{% endif %}</div><span>{{ dish.price }}</span></li>
+        <li><div><strong>{{ dish.name|food_label }}</strong>{% if dish.description %}<p>{{ dish.description|truncatechars:140 }}</p>{% endif %}</div><span>{{ dish.price }}</span></li>
         {% endfor %}
       </ul>
       <div class="budget-delivery"><span>{% trans "Delivery · test fee" %}</span><span>{{ fee }}</span></div>
