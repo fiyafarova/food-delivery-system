@@ -735,3 +735,30 @@ msgid ""
 "Enter a budget between 1 and 1,000,000 tenge, with up to two decimal places."
 msgstr ""
 "Введите бюджет от 1 до 1 000 000 тенге, не более двух знаков после запятой."
+
+msgid "Margherita Pizza"
+msgstr "Пицца Маргарита"
+
+msgid "Chicken Caesar Salad"
+msgstr "Салат Цезарь с курицей"
+
+msgid "Tiramisu"
+msgstr "Тирамису"
+
+msgid "Cola"
+msgstr "Кола"
+
+msgid "French Fries"
+msgstr "Картофель фри"
+
+msgid "Beshbarmak"
+msgstr "Бешбармак"
+
+msgid "Lagman"
+msgstr "Лагман"
+
+msgid "Samsa"
+msgstr "Самса"
+
+msgid "Black Tea"
+msgstr "Чёрный чай"
