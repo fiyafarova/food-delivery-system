@@ -1,6 +1,12 @@
 (function () {
     const labels = document.currentScript.dataset;
     const dishNames = new Map(["Чизбургер", "Картофель фри", "Лимонад", "Маргарита", "Пепперони", "Филадельфия", "Сет на двоих"].map((name, index) => [name, labels["dish" + (index + 1)]]));
+    const translatedNames = document.getElementById("food-name-translations");
+    if (translatedNames) {
+        for (const [source, translated] of Object.entries(JSON.parse(translatedNames.textContent))) {
+            dishNames.set(source, translated);
+        }
+    }
     const demoRestaurants = {
         "urban-burger": { photo: "burgerPhoto", delivery: 400, duration: "20–30" },
         "casa-pizza": { photo: "pizzaPhoto", delivery: 500, duration: "25–35" },
