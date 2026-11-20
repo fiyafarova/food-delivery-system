@@ -2,6 +2,10 @@ import json
 from decimal import Decimal
 from functools import wraps
 
+from .statuses import TRANSITIONS, STATUSES
+
+
+
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
@@ -13,6 +17,11 @@ from restaurants.models import FoodItem
 from .access import CustomerDataError, can_manage_order, can_view_order, customer_of, get_or_create_customer
 from .models import Customer, Delivery, FoodOrder, OrderItem, Payment
 
+
+
+from django.middleware.csrf import CsrfViewMiddleware
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 
 # =========================
 # ACCESS CHECKS
@@ -39,16 +48,51 @@ def order_access(kind):
     def decorator(view):
         @wraps(view)
         def wrapper(request, *args, **kwargs):
-            if not request.user.is_authenticated:
-                return JsonResponse({"error": "Log in first."}, status=401)
+            auth_header = request.headers.get("Authorization", "")
+
+            if auth_header.startswith("Bearer "):
+                try:
+                    authentication = JWTAuthentication().authenticate(request)
+                except AuthenticationFailed:
+                    return JsonResponse(
+                        {"error": "Invalid or expired access token."},
+                        status=401
+                    )
+
+                if authentication is None:
+                    return JsonResponse(
+                        {"error": "Invalid access token."},
+                        status=401
+                    )
+
+                request.user, request.auth = authentication
+
+            else:
+                if not request.user.is_authenticated:
+                    return JsonResponse(
+                        {"error": "Log in first."},
+                        status=401
+                    )
+
+                csrf_middleware = CsrfViewMiddleware(lambda req: None)
+                csrf_response = csrf_middleware.process_view(
+                    request, view, (), kwargs
+                )
+
+                if csrf_response is not None:
+                    return csrf_response
+
             order = _order_from_kwargs(kwargs)
+
             if order is None or not check(request.user, order):
                 return JsonResponse({"error": "Not found."}, status=404)
+
             return view(request, *args, **kwargs)
+
+        wrapper.csrf_exempt = True
         return wrapper
+
     return decorator
-
-
 # =========================
 # SHOPPING CART
 # =========================
@@ -240,42 +284,9 @@ def order_details(request, order_id):
 # ORDER STATUS
 # =========================
 
-@require_POST
-@order_access("manage")
-def update_order_status(request, order_id):
-    try:
-        data = json.loads(request.body)
-        new_status = data.get("status")
 
-        valid_statuses = [
-            "Placed",
-            "Preparing",
-            "Delivered",
-            "Cancelled"
-        ]
 
-        if new_status not in valid_statuses:
-            return JsonResponse(
-                {"error": "Invalid order status."},
-                status=400
-            )
 
-        order = get_object_or_404(
-            FoodOrder,
-            order_id=order_id
-        )
-
-        order.status = new_status
-        order.save(update_fields=["status"])
-
-        return JsonResponse({
-            "message": "Order status updated.",
-            "order_id": order.order_id,
-            "status": order.status,
-        })
-
-    except (ValueError, TypeError, json.JSONDecodeError):
-        return JsonResponse({"error": "Invalid request data."}, status=400)
 
 
 # =========================
@@ -328,6 +339,53 @@ def history_payload(customer):
     }
 from django.utils import timezone
 
+#===============
+#something new
+#===============
+@require_POST
+@order_access("manage")
+def update_order_status(request, order_id):
+    try:
+        data = json.loads(request.body or "{}")
+        new_status = data.get("status")
+
+        if new_status not in STATUSES:
+            return JsonResponse(
+                {"error": "Invalid order status."},
+                status=400
+            )
+
+        order = get_object_or_404(
+            FoodOrder,
+            order_id=order_id
+        )
+
+        allowed_statuses = TRANSITIONS.get(order.status, [])
+
+        if new_status not in allowed_statuses:
+            return JsonResponse(
+                {
+                    "error": "This status transition is not allowed.",
+                    "current_status": order.status,
+                    "allowed_statuses": allowed_statuses,
+                },
+                status=400
+            )
+
+        order.status = new_status
+        order.save(update_fields=["status"])
+
+        return JsonResponse({
+            "message": "Order status updated.",
+            "order_id": order.order_id,
+            "status": order.status,
+        })
+
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse(
+            {"error": "Invalid request data."},
+            status=400
+        )
 
 # =========================
 # PAYMENT MANAGEMENT

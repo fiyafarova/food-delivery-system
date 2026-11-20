@@ -8,6 +8,7 @@ Every view is protected by @staff_required (see staff/permissions.py):
 only employees ("Restaurant staff" group), owners/admins and superusers can open them,
 and each user sees only the restaurants returned by restaurants_for(user).
 """
+from core.statuses import TRANSITIONS, STATUSES
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
@@ -20,16 +21,16 @@ from restaurants.models import FoodItem
 from .account_views import account_links
 from .permissions import restaurants_for, staff_required
 
-STATUSES = [choice for choice, _label in FoodOrder.Status.choices]
-
-# Allowed status changes (agreed in the weekly report, section 2).
-# Delivered and Cancelled are final: no further changes.
-TRANSITIONS = {
-    "Placed": ["Preparing", "Cancelled"],
-    "Preparing": ["Delivered", "Cancelled"],
-    "Delivered": [],
-    "Cancelled": [],
-}
+# STATUSES = [choice for choice, _label in FoodOrder.Status.choices]
+#
+# # Allowed status changes (agreed in the weekly report, section 2).
+# # Delivered and Cancelled are final: no further changes.
+# TRANSITIONS = {
+#     "Placed": ["Preparing", "Cancelled"],
+#     "Preparing": ["Delivered", "Cancelled"],
+#     "Delivered": [],
+#     "Cancelled": [],
+# }
 
 # Bootstrap colour of the status badge
 BADGES = {
