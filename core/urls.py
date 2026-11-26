@@ -57,4 +57,14 @@ urlpatterns = [
         views.delivery_details,
         name="delivery_details"
     ),
+path(
+    "deliveries/<int:delivery_id>/assign/",
+    views.assign_courier,
+    name="assign_courier"
+),
+path(
+    "deliveries/mine/",
+    views.my_deliveries,
+    name="my_deliveries"
+),
 ]

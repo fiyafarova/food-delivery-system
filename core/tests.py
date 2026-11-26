@@ -7,7 +7,7 @@ and the customer sees the new status.
 
 import json
 from decimal import Decimal
-
+from .models import Customer, FoodOrder, OrderItem, Payment
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import IntegrityError, transaction
@@ -19,7 +19,7 @@ from django.core.management import call_command
 
 from restaurants.models import FoodItem, Restaurant
 from staff.permissions import STAFF_GROUP
-
+from io import StringIO
 from .models import Customer, FoodOrder, OrderItem
 
 
@@ -188,14 +188,36 @@ class CustomerAccountTests(TestCase):
         self.assertEqual([o.pk for o in profile.context["orders"]], [order_id])
 
     def test_customer_cannot_change_status(self):
-        order_id = self.order_as(self.anna_client, phone="+77011112233", address="Abay 5").json()["order_id"]
-        response = post_json(self.anna_client, reverse("update_order_status", args=[order_id]), {"status": "Delivered"})
+        order_id = self.order_as(
+            self.anna_client,
+            phone="+77011112233",
+            address="Abay 5"
+        ).json()["order_id"]
+
+        response = post_json(
+            self.anna_client,
+            reverse("update_order_status", args=[order_id]),
+            {"status": "Delivered"}
+        )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(FoodOrder.objects.get(pk=order_id).status, "Placed")
 
+        # Create a Cash payment for the order
+        order = FoodOrder.objects.get(pk=order_id)
+        Payment.objects.create(
+            order=order,
+            amount=order.total_amount,
+            payment_method="Cash",
+        )
+
         staff_client = Client()
         staff_client.force_login(make_staff("cook", self.kitchen))
-        response = post_json(staff_client, reverse("update_order_status", args=[order_id]), {"status": "Preparing"})
+
+        response = post_json(
+            staff_client,
+            reverse("update_order_status", args=[order_id]),
+            {"status": "Preparing"}
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_customer_login_page_and_redirect(self):
@@ -247,11 +269,11 @@ class DatabaseRulesTests(TestCase):
 @override_settings(DEBUG=True)  # create_demo_users runs only with DEBUG on
 class SeedDemoTests(TestCase):
     def test_seed_demo_creates_darya_orders_and_can_run_twice(self):
-        call_command("seed_demo", stdout=open("/dev/null", "w"))
-        call_command("seed_demo", stdout=open("/dev/null", "w"))  # no duplicates
+        call_command("seed_demo", stdout=StringIO())
+        call_command("seed_demo", stdout=StringIO())  # no duplicates
         self.assertEqual(Restaurant.objects.count(), 3)
         self.assertEqual(FoodOrder.objects.count(), 4)
-        call_command("create_demo_users", "--password", "demo-pass-123", stdout=open("/dev/null", "w"))
+        call_command("create_demo_users", "--password", "demo-pass-123", stdout=StringIO())
         self.assertEqual(FoodOrder.objects.filter(customer__user__username="customer_demo").count(), 2)
         self.assertEqual(FoodOrder.objects.filter(customer__user__username="customer2_demo").count(), 1)
         totals = {o.restaurant.name + " " + o.status: o.total_amount for o in FoodOrder.objects.all()}
@@ -269,8 +291,8 @@ class SeedDemoTests(TestCase):
         return sorted(o["restaurant"] for o in orders)
 
     def test_each_demo_employee_sees_only_their_restaurants(self):
-        call_command("create_demo_users", stdout=open("/dev/null", "w"))  # users first ...
-        call_command("seed_demo", stdout=open("/dev/null", "w"))          # ... then data: order does not matter
+        call_command("create_demo_users", stdout=StringIO())  # users first ...
+        call_command("seed_demo", stdout=StringIO())          # ... then data: order does not matter
         User = get_user_model()
         self.assertEqual({r.name for r in User.objects.get(username="staff_demo").staff_restaurants.all()},
                          {"Casa Pizza"})
@@ -285,4 +307,4 @@ class SeedDemoTests(TestCase):
     def test_demo_users_refused_when_debug_is_off(self):
         from django.core.management.base import CommandError
         with override_settings(DEBUG=False), self.assertRaises(CommandError):
-            call_command("create_demo_users", stdout=open("/dev/null", "w"))
+            call_command("create_demo_users", stdout=StringIO())
