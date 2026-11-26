@@ -10,10 +10,12 @@
 | staff_demo     | employee                   | Casa Pizza                                  |
 | staff2_demo    | employee                   | Urban Burger, Dastarkhan                    |
 | owner_demo     | manager (restaurant owner) | owns all 3 demo restaurants, page "Team"    |
-| admin_demo     | administrator (superuser)  | everything, page "Managers", /admin/        |
+| admin_demo     | administrator (superuser)  | everything, pages "Managers", "Couriers"    |
+| courier_demo   | courier Arman              | delivery of order #2 (Dastarkhan, Preparing)|
+| courier2_demo  | courier Dana               | no deliveries yet: a manager assigns one    |
 
 Restaurants and orders come from `python manage.py seed_demo`; the two commands
-can run in any order. Running this again resets only these six accounts
+can run in any order. Running this again resets only these eight accounts
 (password, role, restaurants).
 
 The default password is written in the README on purpose: these accounts are
@@ -26,19 +28,23 @@ from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand, CommandError
 
 from restaurants.models import Restaurant
-from staff.permissions import STAFF_GROUP
+from staff.permissions import COURIER_GROUP, STAFF_GROUP
 
 DEMO_PASSWORD = "BiteBox-demo-2026"
 
 DEMO_USERS = [
-    # username,        role,       in staff group, superuser
-    ("customer_demo",  "customer", False, False),
-    ("customer2_demo", "customer", False, False),
-    ("staff_demo",     "customer", True,  False),
-    ("staff2_demo",    "customer", True,  False),
-    ("owner_demo",     "owner",    False, False),
-    ("admin_demo",     "admin",    False, True),
+    # username,        role,       group,         superuser
+    ("customer_demo",  "customer", None,          False),
+    ("customer2_demo", "customer", None,          False),
+    ("staff_demo",     "customer", STAFF_GROUP,   False),
+    ("staff2_demo",    "customer", STAFF_GROUP,   False),
+    ("owner_demo",     "owner",    None,          False),
+    ("admin_demo",     "admin",    None,          True),
+    ("courier_demo",   "customer", COURIER_GROUP, False),
+    ("courier2_demo",  "customer", COURIER_GROUP, False),
 ]
+
+DEMO_NAMES = {"courier_demo": ("Arman", "Courier"), "courier2_demo": ("Dana", "Courier")}
 
 # Each demo employee works only in these restaurants (owned by owner_demo, see core seed_demo)
 DEMO_STAFF_RESTAURANTS = {
@@ -66,8 +72,24 @@ def link_demo_staff(user):
         user.staff_restaurants.set(Restaurant.objects.filter(owner__username="owner_demo", name__in=names))
 
 
+def link_demo_courier(user):
+    """courier_demo gets the delivery of the demo order that is being prepared (#2, Dastarkhan)."""
+    from core.delivery import assign_courier
+    from core.models import Delivery, FoodOrder
+
+    if user.username != "courier_demo":
+        return
+    order = (FoodOrder.objects.filter(restaurant__owner__username="owner_demo", restaurant__name="Dastarkhan",
+                                      status=FoodOrder.Status.PREPARING, delivery__isnull=True)
+             .select_related("customer").order_by("order_id").first())
+    if order:
+        assign_courier(order, user)
+    else:  # already assigned earlier: keep it, only refresh the courier's name
+        Delivery.objects.filter(courier=user).update(courier_name=user.get_full_name() or user.username)
+
+
 class Command(BaseCommand):
-    help = "Create demo users for every role: customers, employees, owner (manager), admin."
+    help = "Create demo users for every role: customers, employees, owner (manager), admin, couriers."
 
     def add_arguments(self, parser):
         parser.add_argument("--password", default=DEMO_PASSWORD,
@@ -78,22 +100,26 @@ class Command(BaseCommand):
             raise CommandError("Demo users are only for local development (DEBUG is off).")
 
         User = get_user_model()
-        group, _ = Group.objects.get_or_create(name=STAFF_GROUP)
+        groups = {name: Group.objects.get_or_create(name=name)[0] for name in (STAFF_GROUP, COURIER_GROUP)}
 
-        for username, role, in_staff_group, superuser in DEMO_USERS:
+        for username, role, group_name, superuser in DEMO_USERS:
             user, created = User.objects.get_or_create(
                 username=username, defaults={"email": f"{username}@example.com"})
             user.role = role
             user.is_superuser = superuser
             user.is_staff = superuser  # is_staff = may log in to /admin/
+            user.first_name, user.last_name = DEMO_NAMES.get(username, (user.first_name, user.last_name))
             user.set_password(options["password"])  # stored as a PBKDF2 hash, never as plain text
             user.save()
-            if in_staff_group:
-                user.groups.add(group)
+            for name, group in groups.items():
+                if name == group_name:
+                    user.groups.add(group)
+                else:
+                    user.groups.remove(group)
+            if group_name == STAFF_GROUP:
                 link_demo_staff(user)
-            else:
-                user.groups.remove(group)
             link_demo_customer(user)
+            link_demo_courier(user)
             action = "created" if created else "updated"
             self.stdout.write(self.style.SUCCESS(f"{username:<15} {action}"))
 

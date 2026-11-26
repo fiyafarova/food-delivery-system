@@ -117,6 +117,10 @@ class Command(BaseCommand):
             order.save(update_fields=["total_amount"])
             new_orders += 1
 
+        from staff.management.commands.create_demo_users import link_demo_courier
+        for demo_user in User.objects.filter(username="courier_demo"):
+            link_demo_courier(demo_user)  # demo order #2 -> courier_demo (if the account already exists)
+
         self.stdout.write(self.style.SUCCESS(
             f"Demo data ready: {Restaurant.objects.count()} restaurants, {FoodItem.objects.count()} dishes, "
             f"{Customer.objects.count()} customers, {new_orders} new orders."))

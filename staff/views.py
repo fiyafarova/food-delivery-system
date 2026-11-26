@@ -15,11 +15,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from core.models import FoodOrder
+from core.delivery import DeliveryError, assign_courier as give_to_courier, can_assign, finish
+from core.models import Delivery, FoodOrder
 from restaurants.models import FoodItem
 
 from .account_views import account_links
-from .permissions import restaurants_for, staff_required
+from .courier_views import AssignCourierForm, couriers_queryset
+from .permissions import is_manager, manager_required, restaurants_for, staff_required
 
 # STATUSES = [choice for choice, _label in FoodOrder.Status.choices]
 #
@@ -48,7 +50,8 @@ def visible_orders(user):
 def find_order(user, order_id):
     """Return the order with its customer and lines, or 404 (also for other restaurants' orders)."""
     return get_object_or_404(
-        visible_orders(user).select_related("customer", "restaurant").prefetch_related("items__food_item"),
+        visible_orders(user).select_related("customer", "restaurant", "delivery__courier")
+        .prefetch_related("items__food_item"),
         pk=order_id,
     )
 
@@ -105,8 +108,13 @@ def order_detail(request, order_id):
         "phone": order.customer.phone,
         "address": order.customer.address,
     }
+    delivery = getattr(order, "delivery", None)
+    may_assign = is_manager(request.user) and can_assign(order)
     return render(request, "staff/order_detail.html", {
         "order": order_data,
+        "delivery": delivery,
+        "may_assign": may_assign,
+        "couriers": couriers_queryset() if may_assign else [],
         "lines": lines,
         "total": order_total(order),
         "badge": BADGES.get(order.status, "secondary"),
@@ -127,7 +135,29 @@ def change_status(request, order_id):
     else:
         order.status = new_status
         order.save(update_fields=["status"])
+        delivery = Delivery.objects.filter(order=order).first()
+        if new_status == FoodOrder.Status.DELIVERED and delivery:
+            finish(delivery)  # the restaurant closed the order itself: close the delivery too
         messages.success(request, _("Order status changed."))
+    return redirect("staff:order_detail", order_id=order_id)
+
+
+@manager_required
+@require_POST
+def assign_courier(request, order_id):
+    """Manager gives the order to a courier (or changes the courier before pick-up)."""
+    order = get_object_or_404(visible_orders(request.user).select_related("customer"), pk=order_id)
+    form = AssignCourierForm(request.POST)
+    if not form.is_valid():
+        messages.warning(request, _("Choose a courier."))
+    else:
+        courier = form.cleaned_data["courier"]
+        try:
+            give_to_courier(order, courier)
+        except DeliveryError as error:
+            messages.warning(request, str(error))
+        else:
+            messages.success(request, _("Courier %(name)s assigned.") % {"name": courier.username})
     return redirect("staff:order_detail", order_id=order_id)
 
 
