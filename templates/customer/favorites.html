@@ -4,7 +4,8 @@
 {% block title %}{% trans "Favorites" %} — BiteBox{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/favorites.css' %}">
+{% trans "Added ✓" as favorite_added_label %}
+<link rel="stylesheet" href="{% static 'css/favorites.css' %}?v=favorites-cart-1">
 {% url 'customer:menu' as menu_url %}
 
 <div class="bb-fav-page">
@@ -15,6 +16,8 @@
             <h1 class="bb-fav-title">{% trans "Favorites" %}</h1>
         </header>
 
+        <div id="cart-alert" class="alert alert-warning d-none" role="alert"></div>
+        <div id="menu-cart-status" class="visually-hidden" role="status"></div>
         <div id="fav-list" class="d-none"></div>
 
         <div id="fav-empty" class="text-center py-5">
@@ -31,12 +34,16 @@
     </div>
 </div>
 
+{{ cart_dish_ids|json_script:"favorites-cart-ids" }}
 {% food_name_translations as food_names %}
 {{ food_names|json_script:"food-name-translations" }}
-<script src="{% static 'js/favorites.js' %}"
+<script src="{% static 'js/favorites.js' %}?v=favorites-cart-1"
         data-add='{% trans "Add to favorites" %}'
         data-remove-heart='{% trans "Remove from favorites" %}'
         data-remove='{% trans "Remove" %}'
+        data-cart-add-url="{% url 'customer:cart_add' %}"
+        data-cart-add="{% trans 'Add to cart' %}"
+        data-cart-added="{{ favorite_added_label|cut:" ✓" }}"
         data-menu-url="{{ menu_url }}"
         data-menu-label="{% trans 'View menu' %}"
         data-delivery="{% trans 'Delivery' %}"
@@ -50,4 +57,11 @@
         data-dish-5='{% trans "Pepperoni" %}'
         data-dish-6='{% trans "Philadelphia rolls" %}'
         data-dish-7='{% trans "Set for two" %}'></script>
+<script src="{% static 'js/cart.js' %}?v=favorites-cart-1"
+        data-update-error="{% trans 'Could not update the cart' %}"
+        data-network-error="{% trans 'Could not reach the server. Please try again.' %}"
+        data-add-error="{% trans 'Could not add the dish' %}"
+        data-added="{{ favorite_added_label|cut:" ✓" }}"
+        data-add-to-cart="{% trans 'Add to cart' %}"
+        data-replace-cart="{% trans 'Your cart contains dishes from “{current}”. Replace them with dishes from “{next}”?' %}"></script>
 {% endblock %}

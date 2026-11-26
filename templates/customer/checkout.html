@@ -82,6 +82,7 @@
 
 <div class="bb-checkout" id="checkout-page"
      data-update-url="{% url 'customer:cart_update' %}" data-cart-url="{% url 'customer:cart' %}"
+     data-select-card-url="{% url 'customer:select_card' %}"
      data-create-url="{% url 'create_order' %}"
      data-order-url="{% url 'customer:order_status' 0 %}"
      data-login-url="{% url 'customer:login' %}?next={% url 'customer:checkout' %}"
@@ -156,7 +157,7 @@
                 <button class="checkout-card-option" type="button" data-bs-toggle="modal" data-bs-target="#checkout-payment">
                     <span>
                         <strong class="d-block">{% if checkout_language == "ru" %}Карта{% else %}Card{% endif %}</strong>
-                        <span class="small text-muted" id="checkout-card-selection" aria-live="polite">{% if checkout_language == "ru" %}Выбрать тестовую карту{% else %}Choose a test card{% endif %}</span>
+                        <span class="small text-muted" id="checkout-card-selection" data-card-id="{{ selected_card.pk|default:''|unlocalize }}" aria-live="polite">{% if selected_card %}{{ selected_card }}{% else %}{% trans "Choose a saved card" %}{% endif %}</span>
                     </span>
                     <span aria-hidden="true">›</span>
                 </button>
@@ -165,19 +166,16 @@
             <section class="checkout-panel">
                 <h2 class="h5 mb-3">{% if checkout_language == "ru" %}Промокод{% else %}Promo code{% endif %}</h2>
                 <form id="checkout-promo-form"
-                      data-success="{% if checkout_language == 'ru' %}Тестовый промокод применён.{% else %}Test promo code applied.{% endif %}"
-                      data-invalid="{% trans "Promo codes are not available yet." %}">
+                      data-success="{% if checkout_language == 'ru' %}Промокод применён.{% else %}Promo code applied.{% endif %}"
+                      data-invalid="{% if checkout_language == 'ru' %}Промокод не найден. Проверьте написание.{% else %}Promo code not found. Check its spelling.{% endif %}">
                     <label for="checkout-promo" class="visually-hidden">{% if checkout_language == "ru" %}Промокод{% else %}Promo code{% endif %}</label>
                     <div class="d-flex flex-wrap gap-2">
                         <input class="form-control w-auto flex-grow-1" id="checkout-promo" type="text"
                                maxlength="32" autocomplete="off" spellcheck="false" required
-                               aria-describedby="checkout-promo-hint checkout-promo-status"
+                               aria-describedby="checkout-promo-status"
                                placeholder="{% if checkout_language == 'ru' %}Введите промокод{% else %}Enter a promo code{% endif %}">
                         <button class="btn checkout-submit" type="submit">{% if checkout_language == "ru" %}Применить{% else %}Apply{% endif %}</button>
                     </div>
-                    <p class="text-muted small mt-2 mb-0" id="checkout-promo-hint">
-                        {% trans "Promo codes are not available yet." %}
-                    </p>
                     <p class="small mt-2 mb-0" id="checkout-promo-status" role="status" hidden></p>
                 </form>
             </section>
@@ -210,9 +208,9 @@
                     {% if checkout_language == "ru" %}Разместить заказ{% else %}Place order{% endif %}
                 </button>
                 <p id="place-order-error" class="text-danger mt-2" role="alert" hidden></p>
-                <p class="checkout-note rounded-3 p-3 small mt-3 mb-0">
-                    {% if cart.lines.0.id < 0 %}{% trans "Demo dishes cannot be ordered. Choose a dish from a restaurant." %}{% else %}{% trans "The order will be sent to the restaurant. Online payment is not connected." %}{% endif %}
-                </p>
+                {% if cart.lines.0.id < 0 %}
+                <p class="checkout-note rounded-3 p-3 small mt-3 mb-0">{% trans "Demo dishes cannot be ordered. Choose a dish from a restaurant." %}</p>
+                {% endif %}
             </div>
         </aside>
     </div>
@@ -225,26 +223,23 @@
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="{% if checkout_language == 'ru' %}Закрыть{% else %}Close{% endif %}"></button>
                 </div>
                 <div class="modal-body">
-                    <h3 class="h6 mb-2">{% if checkout_language == "ru" %}Тестовые карты{% else %}Test cards{% endif %}</h3>
-                    <p class="text-muted small">{% if checkout_language == "ru" %}Демонстрация выбора карты. Не вводите данные настоящей карты.{% else %}Payment selection demo. Do not enter real card details.{% endif %}</p>
-                    <button class="checkout-card-option mb-2" type="button" data-demo-card="4242" data-bs-dismiss="modal">
-                        <strong>•••• 4242</strong><span>{% if checkout_language == "ru" %}Выбрать{% else %}Select{% endif %}</span>
+                    <h3 class="h6 mb-2">{% trans "Saved cards" %}</h3>
+                    <p class="text-muted small">{% trans "Card selection only. Online payments are not connected." %}</p>
+                    {% for card in saved_cards %}
+                    <button class="checkout-card-option mb-2" type="button"
+                            data-saved-card-id="{{ card.pk|unlocalize }}" data-card-label="{{ card }}">
+                        <span><strong class="d-block">{{ card.nickname }}</strong><span class="small text-muted">{{ card.get_brand_display }} · •••• {{ card.last4 }}</span></span>
+                        <span>{% trans "Select" %}</span>
                     </button>
-                    <button class="checkout-card-option mb-3" type="button" data-demo-card="5556" data-bs-dismiss="modal">
-                        <strong>•••• 5556</strong><span>{% if checkout_language == "ru" %}Выбрать{% else %}Select{% endif %}</span>
-                    </button>
-                    <form id="checkout-demo-card-form">
-                        <label for="checkout-demo-card" class="form-label">{% if checkout_language == "ru" %}Последние 4 цифры тестовой карты{% else %}Last 4 digits of a test card{% endif %}</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            <input type="text" id="checkout-demo-card" class="form-control w-auto" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]{4}" required>
-                            <button class="btn checkout-submit" type="submit">{% if checkout_language == "ru" %}Выбрать{% else %}Select{% endif %}</button>
-                        </div>
-                    </form>
+                    {% empty %}<p>{% trans "No saved cards yet." %}</p>{% endfor %}
+                    <p id="checkout-card-error" class="text-danger small" role="alert" hidden data-error="{% trans 'Could not select the card. Please try again.' %}"></p>
+                    <a class="btn checkout-submit mt-2" href="{% url 'customer:profile' %}?tab=cards">{% trans "Manage cards in profile" %}</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{{ promotions|json_script:"checkout-promotions" }}
 <script>
     (() => {
         const checkout = document.getElementById("checkout-page");
@@ -258,10 +253,11 @@
         const discountValue = document.getElementById("checkout-discount");
         const formatter = new Intl.NumberFormat(document.documentElement.lang || "ru");
         const money = (minor) => formatter.format(minor / 100) + " ₸";
-        let promoApplied = false;
+        const promotions = JSON.parse(document.getElementById("checkout-promotions").textContent);
+        let promoApplied = "";
 
         function renderDiscount() {
-            const discount = promoApplied ? Math.round(subtotal / 10) : 0;
+            const discount = promoApplied ? Math.round(subtotal * promotions[promoApplied] / 100) : 0;
             discountRow.classList.toggle("d-none", !promoApplied);
             discountValue.textContent = "−" + money(discount);
             if (payable) payable.textContent = money(Number(total) - discount);
@@ -269,8 +265,9 @@
 
         promoForm.addEventListener("submit", (event) => {
             event.preventDefault();
-            const valid = false;
-            promoApplied = valid;
+            const code = promoInput.value.trim().toUpperCase();
+            const valid = Object.hasOwn(promotions, code);
+            promoApplied = valid ? code : "";
             promoInput.toggleAttribute("aria-invalid", !valid);
             promoStatus.hidden = false;
             promoStatus.classList.toggle("text-danger", !valid);
@@ -278,8 +275,8 @@
             renderDiscount();
         });
         promoInput.addEventListener("input", () => {
-            if (promoApplied && promoInput.value.trim().toUpperCase() === "BITE10") return;
-            promoApplied = false;
+            if (promoApplied && promoInput.value.trim().toUpperCase() === promoApplied) return;
+            promoApplied = "";
             promoInput.removeAttribute("aria-invalid");
             promoStatus.hidden = true;
             renderDiscount();
@@ -310,7 +307,12 @@
                         "Content-Type": "application/json",
                         "X-CSRFToken": document.querySelector("#checkout-draft [name=csrfmiddlewaretoken]").value
                     },
-                    body: JSON.stringify({phone: phone.value.trim(), address: address.value.trim()})
+                    body: JSON.stringify({
+                        promo_code: promoApplied,
+                        phone: phone.value.trim(),
+                        address: address.value.trim(),
+                        card_id: document.getElementById("checkout-card-selection").dataset.cardId || null
+                    })
                 });
                 if (response.status === 401) {
                     window.location.assign(checkout.dataset.loginUrl);
@@ -401,19 +403,33 @@
 
         const payment = document.getElementById("checkout-payment");
         const selection = document.getElementById("checkout-card-selection");
-        const demoCard = document.getElementById("checkout-demo-card");
-        for (const option of payment.querySelectorAll("[data-demo-card]")) {
-            option.addEventListener("click", () => {
-                selection.textContent = "•••• " + option.dataset.demoCard;
+        const cardError = document.getElementById("checkout-card-error");
+        const cardButtons = Array.from(payment.querySelectorAll("[data-saved-card-id]"));
+        for (const option of cardButtons) {
+            option.addEventListener("click", async () => {
+                for (const button of cardButtons) button.disabled = true;
+                cardError.hidden = true;
+                try {
+                    const response = await fetch(checkout.dataset.selectCardUrl, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": document.querySelector("#checkout-draft [name=csrfmiddlewaretoken]").value
+                        },
+                        body: new URLSearchParams({card_id: option.dataset.savedCardId})
+                    });
+                    if (!response.ok || response.redirected) throw new Error();
+                    const result = await response.json();
+                    selection.textContent = result.label;
+                    selection.dataset.cardId = String(result.card_id);
+                    bootstrap.Modal.getOrCreateInstance(payment).hide();
+                } catch {
+                    cardError.textContent = cardError.dataset.error;
+                    cardError.hidden = false;
+                } finally {
+                    for (const button of cardButtons) button.disabled = false;
+                }
             });
         }
-        document.getElementById("checkout-demo-card-form").addEventListener("submit", (event) => {
-            event.preventDefault();
-            if (!/^[0-9]{4}$/.test(demoCard.value)) return;
-            selection.textContent = "•••• " + demoCard.value;
-            demoCard.value = "";
-            bootstrap.Modal.getOrCreateInstance(payment).hide();
-        });
 
         renderDiscount();
     })();

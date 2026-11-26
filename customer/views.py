@@ -1,3 +1,4 @@
+from core.promotions import PROMOTIONS
 
 from django.contrib import messages
 from django.contrib.auth import login
@@ -10,20 +11,31 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.utils.translation import gettext
 
-from accounts.models import CustomerProfile, DeliveryAddress
+from accounts.models import CustomerProfile, DeliveryAddress, SavedCard
 from restaurants.models import Restaurant
 
 from core.access import customer_of
 from core.models import FoodOrder
 
+from .cards import SELECTED_CARD_KEY
+from .tracking import tracking_state
 from .cart import build_cart
-from .forms import AddressForm, PersonalForm, SignUpForm
+from .forms import AddressForm, PersonalForm, SignUpForm, SavedCardForm
 
 @ensure_csrf_cookie
 def menu(request):
     restaurants = list(Restaurant.objects.filter(is_open=True).prefetch_related("food_items"))
     cart = build_cart(request)
+    active_order = None
+    if request.user.is_authenticated:
+        active_order = FoodOrder.objects.filter(
+            customer__user=request.user,
+            status__in=[FoodOrder.Status.PLACED, FoodOrder.Status.PREPARING],
+        ).exclude(delivery__delivery_status="Delivered").select_related(
+            "restaurant", "delivery").order_by("-order_date", "-pk").first()
     return render(request, "customer/menu.html", {
+        "active_order": active_order,
+        "active_tracking": tracking_state(active_order) if active_order else None,
         "restaurants": restaurants,
         "cuisines": sorted({restaurant.cuisine for restaurant in restaurants if restaurant.cuisine}),
         "cart_dish_ids": {line["id"] for line in cart["lines"]},
@@ -42,6 +54,9 @@ CHECKOUT_FIELD_LIMITS = {"city": 100, "phone": 20, "address": 255, "comment": 50
 @require_http_methods(["GET", "POST"])
 def checkout(request):
     cart = build_cart(request)
+    cards = request.user.saved_cards.all()
+    selected_card = cards.filter(pk=request.session.get(SELECTED_CARD_KEY)).first()
+    card_context = {"saved_cards": cards, "selected_card": selected_card, "promotions": PROMOTIONS}
     ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     if not cart["can_checkout"]:
         if ajax:
@@ -53,7 +68,7 @@ def checkout(request):
         if any(len(draft[field]) > limit for field, limit in CHECKOUT_FIELD_LIMITS.items()):
             if ajax:
                 return JsonResponse({"saved": False}, status=400)
-            return render(request, "customer/checkout.html", {"cart": cart, "draft": draft, "draft_error": True}, status=400)
+            return render(request, "customer/checkout.html", {"cart": cart, "draft": draft, "draft_error": True, **card_context}, status=400)
         request.session[CHECKOUT_DRAFT_KEY] = draft
         if ajax:
             return JsonResponse({"saved": True})
@@ -64,11 +79,7 @@ def checkout(request):
     if draft is None:
         profile = getattr(request.user, "profile", None) if request.user.is_authenticated else None
         draft = {field: getattr(profile, field, "") for field in CHECKOUT_FIELD_LIMITS}
-    return render(request, "customer/checkout.html", {"cart": cart, "draft": draft})
-
-
-# Steps shown to the customer on the order page
-ORDER_STEPS = ["Placed", "Preparing", "Delivered"]
+    return render(request, "customer/checkout.html", {"cart": cart, "draft": draft, **card_context})
 
 
 @login_required
@@ -76,27 +87,33 @@ def order_status(request, order_id):
     """A customer sees only their own order (someone else's order -> 404)."""
     customer = customer_of(request.user)
     order = get_object_or_404(
-        FoodOrder.objects.select_related("restaurant").prefetch_related("items__food_item"),
+        FoodOrder.objects.select_related("restaurant", "delivery", "payment_card").prefetch_related("items__food_item"),
         pk=order_id, customer=customer,
     ) if customer else None
     if order is None:
         raise Http404
+    tracking = tracking_state(order)
+    if request.GET.get("tracking") == "1":
+        response = JsonResponse(tracking)
+        response["Cache-Control"] = "no-store"
+        return response
     lines = [
         {"name": line.food_item.name, "quantity": line.quantity,
          "unit_price": line.unit_price, "total": line.quantity * line.unit_price}
         for line in order.items.all()
     ]
-    done = ORDER_STEPS.index(order.status) if order.status in ORDER_STEPS else -1
-    steps = [{"name": step, "done": i <= done} for i, step in enumerate(ORDER_STEPS)]
     return render(request, "customer/order_status.html", {
         "order": order,
+        "tracking": tracking,
         "lines": lines,
-        "steps": steps,
-        "cancelled": order.status == FoodOrder.Status.CANCELLED,
     })
 
+@ensure_csrf_cookie
 def favorites(request):
-    return render(request, "customer/favorites.html")
+    cart = build_cart(request)
+    return render(request, "customer/favorites.html", {
+        "cart_dish_ids": [str(line["id"]) for line in cart["lines"]],
+    })
 
 
 
@@ -125,9 +142,26 @@ def profile(request):
 
     personal_form = PersonalForm(user=user, profile=profile_obj)
     address_form = AddressForm(profile=address_obj)
+    card_form = SavedCardForm(request.POST if form_type == "card" else None)
 
     if request.method == "POST":
-        if form_type == "personal":
+        if form_type == "card":
+            tab = "cards"
+            if card_form.is_valid():
+                card = card_form.save(commit=False)
+                card.user = user
+                card.save()
+                return redirect(f"{profile_url}?tab=cards")
+        elif form_type == "delete_card":
+            card_id = request.POST.get("card_id", "")
+            if not card_id.isascii() or not card_id.isdecimal() or len(card_id) > 18:
+                raise Http404
+            card = get_object_or_404(SavedCard, user=user, pk=card_id)
+            if request.session.get(SELECTED_CARD_KEY) == card.pk:
+                request.session.pop(SELECTED_CARD_KEY, None)
+            card.delete()
+            return redirect(f"{profile_url}?tab=cards")
+        elif form_type == "personal":
             tab = "personal"
             editing = True
             personal_form = PersonalForm(
@@ -162,6 +196,8 @@ def profile(request):
         "profile_url": profile_url,
         "logout_url": reverse("customer:logout"),
         "orders": my_orders(user) if tab == "orders" else (),
+        "saved_cards": user.saved_cards.all() if tab == "cards" else (),
+        "card_form": card_form,
     })
 
 

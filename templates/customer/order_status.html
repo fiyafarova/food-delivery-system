@@ -1,27 +1,41 @@
 {% extends "base.html" %}
-{% load i18n food_labels %}
+{% load static i18n food_labels l10n %}
 {% block title %}{% trans "Order" %} #{{ order.order_id }} — BiteBox{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <div>
-        <h1 class="h3 fw-bold mb-1">{% trans "Order" %} #{{ order.order_id }}</h1>
+{% get_current_language as order_language %}
+<header class="order-page-header mb-3">
+    <h1 class="order-page-title mb-1">{% trans "Order" %} #{{ order.order_id }}</h1>
+    <div class="order-page-meta">
         <div class="text-muted">{{ order.restaurant.name }} · {{ order.order_date|date:"d.m.Y H:i" }}</div>
+        <a class="all-orders-button" href="{% url 'customer:profile' %}?tab=orders">{% trans "All my orders" %}</a>
     </div>
-    <a class="btn btn-outline-dark" href="{% url 'customer:profile' %}?tab=orders">{% trans "All my orders" %}</a>
-</div>
+</header>
 
-{% if cancelled %}
-<div class="alert alert-danger">{% trans "This order was cancelled." %}</div>
-{% else %}
-<ol class="list-unstyled d-flex flex-wrap gap-2 mb-4" aria-label="{% trans 'Order status' %}">
-    {% for step in steps %}
-    <li class="badge rounded-pill fs-6 fw-normal {% if step.done %}text-bg-success{% else %}text-bg-light border{% endif %}">
-        {% if step.done %}✓ {% endif %}{% trans step.name %}
-    </li>
-    {% endfor %}
-</ol>
+<link rel="stylesheet" href="{% static 'css/order-tracking.css' %}">
+<section class="order-tracking" data-order-tracking
+         data-tracking-url="{% url 'customer:order_status' order.pk %}?tracking=1"
+         data-terminal="{{ tracking.terminal|yesno:'true,false' }}">
+    <div class="tracking-summary" aria-live="polite" aria-atomic="true">
+        <h2 data-tracking-label>{{ tracking.label }}</h2>
+        <p data-tracking-description>{{ tracking.description }}</p>
+        <p{% if not tracking.courier %} hidden{% endif %}>{% trans "Courier" %}: <span data-tracking-courier>{{ tracking.courier }}</span></p>
+    </div>
+    <ol class="tracking-steps" aria-label="{% trans 'Order status' %}">
+        {% for step in tracking.steps %}
+        <li data-tracking-step class="{% if step.done %}is-done{% endif %} {% if step.current %}is-current{% endif %}"{% if step.current %} aria-current="step"{% endif %}>{{ step.label }}</li>
+        {% endfor %}
+    </ol>
+    <div data-tracking-cancel{% if not tracking.can_cancel %} hidden{% endif %} class="my-3">
+        <a class="all-orders-button" href="{% url 'customer:cancel_order' order.pk %}">{% trans "Cancel order" %}</a>
+    </div>
+    <p class="text-danger small" data-tracking-error role="status" hidden>{% trans "Could not refresh the status. Retrying shortly." %}</p>
+</section>
+<script src="{% static 'js/order-tracking.js' %}" defer></script>
+
+{% if order.payment_card %}
+<p class="text-muted">{% trans "Selected card" %}: {{ order.payment_card }}</p>
 {% endif %}
-
+{% if order.promo_code %}<p class="text-muted">{% if order_language == 'ru' %}Промокод{% else %}Promo code{% endif %}: {{ order.promo_code }} · −{{ order.discount_amount }} ₸</p>{% endif %}
 <table class="table align-middle">
     <thead>
     <tr>

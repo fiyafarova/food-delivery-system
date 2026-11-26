@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% trans "Cancel order" %} #{{ order.pk }} — BiteBox{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/order-tracking.css' %}">
+<h1 class="order-page-title">{% trans "Order" %} #{{ order.pk }}</h1>
+<div class="tracking-summary cancel-confirmation my-4">
+    {% if can_cancel %}
+    <h2>{% trans "Cancel this order?" %}</h2>
+    <p>{{ order.restaurant.name }}</p>
+    <form method="post" class="cancel-confirmation-actions">
+        {% csrf_token %}
+        <a class="all-orders-button" href="{% url 'customer:order_status' order.pk %}">{% trans "Keep the order" %}</a>
+        <button class="all-orders-button" type="submit">{% trans "Yes, cancel order" %}</button>
+    </form>
+    {% else %}
+    <h2>{% trans "Cancellation is unavailable" %}</h2>
+    <p>{% trans "Only an order that has not started preparation can be cancelled." %}</p>
+    <a class="all-orders-button mt-3" href="{% url 'customer:order_status' order.pk %}">{% trans "Back to order" %}</a>
+    {% endif %}
+</div>
+{% endblock %}

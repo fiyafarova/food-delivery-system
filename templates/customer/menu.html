@@ -141,6 +141,19 @@
     letter-spacing: -.035em;
   }
 
+  .home .discovery-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .home .discovery-toolbar > .discovery-filters {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
   .home .discovery-filters {
     display: flex;
     flex-direction: column;
@@ -559,6 +572,7 @@
       <h2 class="discovery-heading">{% trans "What are you craving today?" %}</h2>
       <a class="budget-link" href="{% url 'customer:budget' %}">{% trans "Meal by budget" %} <span aria-hidden="true">→</span></a>
     </div>
+    <div class="discovery-toolbar">
     <div class="discovery-filters">
       <div class="categories" aria-label="{% trans "Restaurant categories" %}">
         {% if restaurants %}
@@ -606,6 +620,22 @@
                  placeholder="{% if home_language == 'ru' %}Поиск блюда или ресторана{% else %}Search for a dish or restaurant{% endif %}">
         </div>
       </div>
+    </div>
+
+{% if active_order %}
+<link rel="stylesheet" href="{% static 'css/order-tracking.css' %}">
+<div class="order-tracking-float" data-order-tracking data-widget="true"
+     data-tracking-url="{% url 'customer:order_status' active_order.pk %}?tracking=1">
+    <a href="{% url 'customer:order_status' active_order.pk %}"
+       aria-label="{% trans 'Track my order' %} #{{ active_order.pk|unlocalize }}"
+       title="{% trans 'Track my order' %} #{{ active_order.pk|unlocalize }} · {{ active_tracking.label }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 8h16l-1 12H5L4 8Z"/><path d="M8 8V6a4 4 0 0 1 8 0v2M9 13h6M9 16h4"/>
+        </svg>
+    </a>
+</div>
+<script src="{% static 'js/order-tracking.js' %}" defer></script>
+{% endif %}
     </div>
 
     <h2 class="discovery-heading">{% trans "Restaurants nearby" %}</h2>
@@ -1082,4 +1112,5 @@
         data-added="{{ cart_added_label|cut:' ✓' }}"
         data-add-to-cart="{% trans 'Add to cart' %}"
         data-replace-cart='{% trans "Your cart contains dishes from “{current}”. Replace them with dishes from “{next}”?" %}' data-removed='{% trans "Removed from cart" %}'></script>
+
 {% endblock %}

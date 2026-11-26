@@ -1,4 +1,5 @@
 from django import forms
+from accounts.models import SavedCard
 from django.core.validators import RegexValidator
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -116,3 +117,20 @@ class SignUpForm(forms.Form):
         )
         CustomerProfile.objects.create(user=user)
         return user
+
+
+class SavedCardForm(forms.ModelForm):
+    last4 = forms.CharField(
+        label=_("Last 4 digits"), min_length=4, max_length=4,
+        validators=[RegexValidator(r"^[0-9]{4}$", _("Enter exactly four digits."))],
+        widget=forms.TextInput(attrs={"class": "form-control", "inputmode": "numeric", "autocomplete": "off"}),
+    )
+
+    class Meta:
+        model = SavedCard
+        fields = ["nickname", "brand", "last4"]
+        labels = {"nickname": _("Card name"), "brand": _("Card type")}
+        widgets = {
+            "nickname": forms.TextInput(attrs={"class": "form-control", "placeholder": _("For example, my main card")}),
+            "brand": forms.Select(attrs={"class": "form-select"}),
+        }

@@ -7,10 +7,12 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
 from django.db import transaction
 
+from accounts.models import SavedCard
 from customer import cart as shared_cart
 from restaurants.models import FoodItem
 
 from .access import CustomerDataError, can_manage_order, can_view_order, customer_of, get_or_create_customer
+from .promotions import calculate_discount
 from .models import Customer, Delivery, FoodOrder, OrderItem, Payment
 
 
@@ -170,6 +172,12 @@ def create_order(request):
     if any(not food.is_available for food, _qty in lines):
         return JsonResponse({"error": "Some dishes in the cart are not available."}, status=400)
 
+    subtotal = sum((food.price * qty for food, qty in lines), Decimal("0.00"))
+    try:
+        promo_code, discount = calculate_discount(subtotal, data.get("promo_code", ""))
+    except ValueError:
+        return JsonResponse({"error": "Промокод не найден. Проверьте написание."}, status=400)
+
     restaurants = {food.restaurant_id for food, _qty in lines}
     if len(restaurants) != 1:  # the cart never allows this, but check anyway
         return JsonResponse({"error": "All dishes must be from one restaurant."}, status=400)
@@ -180,8 +188,18 @@ def create_order(request):
     except CustomerDataError as error:
         return JsonResponse({"error": str(error)}, status=400)
 
+    card_id = data.get("card_id")
+    card = None
+    if card_id is not None:
+        if isinstance(card_id, bool) or len(str(card_id)) > 18 or not str(card_id).isascii() or not str(card_id).isdigit():
+            return JsonResponse({"error": "Invalid card selection."}, status=400)
     with transaction.atomic():
+        if card_id is not None:
+            card = get_object_or_404(SavedCard.objects.select_for_update(), user=request.user, pk=card_id)
         order = FoodOrder.objects.create(
+            payment_card=card,
+            promo_code=promo_code,
+            discount_amount=discount,
             customer=customer,
             restaurant_id=restaurants.pop(),
             status="Placed",
@@ -191,7 +209,7 @@ def create_order(request):
         for food, quantity in lines:
             total += food.price * quantity
             OrderItem.objects.create(order=order, food_item=food, quantity=quantity, unit_price=food.price)
-        order.total_amount = total
+        order.total_amount = total - discount
         order.save(update_fields=["total_amount"])
 
     shared_cart.clear_cart(request)
@@ -265,13 +283,17 @@ def update_order_status(request, order_id):
             order_id=order_id
         )
 
-        order.status = new_status
-        order.save(update_fields=["status"])
+        from staff.views import TRANSITIONS
+        if new_status not in TRANSITIONS.get(order.status, []):
+            return JsonResponse({"error": "This status change is not allowed."}, status=409)
+        changed = FoodOrder.objects.filter(pk=order.pk, status=order.status).update(status=new_status)
+        if not changed:
+            return JsonResponse({"error": "The order changed. Refresh and try again."}, status=409)
 
         return JsonResponse({
             "message": "Order status updated.",
             "order_id": order.order_id,
-            "status": order.status,
+            "status": new_status,
         })
 
     except (ValueError, TypeError, json.JSONDecodeError):

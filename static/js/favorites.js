@@ -7,6 +7,23 @@
             dishNames.set(source, translated);
         }
     }
+    const savedCartIds = document.getElementById("favorites-cart-ids");
+    let cartIds = new Set(savedCartIds ? JSON.parse(savedCartIds.textContent) : []);
+    const demoDishIds = {
+        "urban-burger-1": "-1", "urban-burger-2": "-2", "urban-burger-3": "-3",
+        "casa-pizza-1": "-4", "casa-pizza-2": "-5", "casa-pizza-3": "-6",
+        "nori-sushi-1": "-7", "nori-sushi-2": "-8"
+    };
+
+    function cartDishId(entry) {
+        const match = entry.id.match(/^food-([1-9][0-9]*)$/);
+        return match ? match[1] : demoDishIds[entry.id];
+    }
+
+    document.addEventListener("bb:cart-updated", (event) => {
+        cartIds = new Set(Object.keys(event.detail.lines));
+    });
+
     const demoRestaurants = {
         "urban-burger": { photo: "burgerPhoto", delivery: 400, duration: "20–30" },
         "casa-pizza": { photo: "pizzaPhoto", delivery: 500, duration: "25–35" },
@@ -164,9 +181,20 @@
             menuLink.href = url.href;
         }
 
-        const remove = addText(actions, "button", "btn btn-bb-outline js-fav-remove", labels.remove);
+        const buttons = document.createElement("div");
+        buttons.className = "bb-fav-buttons";
+        const dishId = cartDishId(entry);
+        if (dishId && labels.cartAddUrl) {
+            const add = addText(buttons, "button", "btn btn-bb js-add-to-cart",
+                cartIds.has(dishId) ? labels.cartAdded : labels.cartAdd);
+            add.type = "button";
+            add.dataset.url = labels.cartAddUrl;
+            add.dataset.dishId = dishId;
+        }
+        const remove = addText(buttons, "button", "btn btn-bb-outline js-fav-remove", labels.remove);
         remove.type = "button";
         remove.dataset.favId = entry.id;
+        actions.appendChild(buttons);
         content.appendChild(actions);
         card.appendChild(content);
         col.appendChild(card);

@@ -762,3 +762,136 @@ msgstr "Самса"
 
 msgid "Black Tea"
 msgstr "Чёрный чай"
+
+msgid "Order received"
+msgstr "Заказ принят"
+
+msgid "Courier assigned"
+msgstr "Курьер назначен"
+
+msgid "On the way"
+msgstr "В пути"
+
+msgid "The restaurant has received your order."
+msgstr "Ресторан получил ваш заказ."
+
+msgid "Your meal is being prepared."
+msgstr "Ваш заказ готовится."
+
+msgid "A courier has been assigned to your order."
+msgstr "Для вашего заказа назначен курьер."
+
+msgid "The courier has picked up your order and is on the way."
+msgstr "Курьер забрал заказ и направляется к вам."
+
+msgid "Your order has been delivered."
+msgstr "Ваш заказ доставлен."
+
+msgid "Courier"
+msgstr "Курьер"
+
+msgid "Status updates automatically every 10 seconds."
+msgstr "Статус обновляется автоматически каждые 10 секунд."
+
+msgid "Could not refresh the status. Retrying shortly."
+msgstr "Не удалось обновить статус. Повторим попытку через несколько секунд."
+
+msgid "Track my order"
+msgstr "Отследить мой заказ"
+
+msgid "Your order has been cancelled."
+msgstr "Ваш заказ отменён."
+
+msgid "This order was already cancelled."
+msgstr "Этот заказ уже отменён."
+
+msgid ""
+"The restaurant has already started your order. Cancellation is no longer "
+"available."
+msgstr "Ресторан уже начал готовить ваш заказ. Отмена больше недоступна."
+
+msgid "Cancel order"
+msgstr "Отменить заказ"
+
+msgid "Actions"
+msgstr "Действия"
+
+msgid "Cancel this order?"
+msgstr "Отменить этот заказ?"
+
+msgid "The order will remain in your history with the Cancelled status."
+msgstr "Заказ останется в истории со статусом «Отменён»."
+
+msgid "Keep the order"
+msgstr "Оставить заказ"
+
+msgid "Yes, cancel order"
+msgstr "Да, отменить заказ"
+
+msgid "Cancellation is unavailable"
+msgstr "Отмена недоступна"
+
+msgid "Only an order that has not started preparation can be cancelled."
+msgstr "Отменить можно только заказ, который ещё не начали готовить."
+
+msgid "Back to order"
+msgstr "К заказу"
+
+msgid "The order changed. Refresh the page and try again."
+msgstr "Заказ изменился. Обновите страницу и попробуйте ещё раз."
+
+msgid "Saved cards"
+msgstr "Сохранённые карты"
+
+msgid ""
+"Save a name, card type and last four digits to identify your cards at "
+"checkout. Online payments are not connected."
+msgstr ""
+"Добавьте название, тип и последние четыре цифры карты, чтобы выбирать её при"
+" оформлении. Онлайн-оплата пока не подключена."
+
+msgid "No saved cards yet."
+msgstr "Сохранённых карт пока нет."
+
+msgid "Add a card"
+msgstr "Добавить карту"
+
+msgid "Save card"
+msgstr "Сохранить карту"
+
+msgid "Last 4 digits"
+msgstr "Последние 4 цифры"
+
+msgid "Enter exactly four digits."
+msgstr "Введите ровно четыре цифры."
+
+msgid "Card name"
+msgstr "Название карты"
+
+msgid "Card type"
+msgstr "Тип карты"
+
+msgid "For example, my main card"
+msgstr "Например, основная карта"
+
+msgid "Choose a saved card"
+msgstr "Выбрать сохранённую карту"
+
+msgid "Card selection only. Online payments are not connected."
+msgstr ""
+"Здесь сохраняется только выбор карты. Онлайн-оплата пока не подключена."
+
+msgid "Select"
+msgstr "Выбрать"
+
+msgid "Could not select the card. Please try again."
+msgstr "Не удалось выбрать карту. Попробуйте ещё раз."
+
+msgid "Manage cards in profile"
+msgstr "Управлять картами в профиле"
+
+msgid "Selected card"
+msgstr "Выбранная карта"
+
+msgid "Other"
+msgstr "Другая"

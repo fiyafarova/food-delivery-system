@@ -4,11 +4,14 @@ from django.views.generic import RedirectView
 
 from . import cart_views, views
 
+from .cards import select_card
+from .cancellation import cancel_order
 from .budget import budget_meals
 
 app_name = "customer"
 
 urlpatterns = [
+    path("checkout/card/", select_card, name="select_card"),
     path("budget/", budget_meals, name="budget"),
     path("", RedirectView.as_view(pattern_name="customer:menu", permanent=False)),
     path("menu/", views.menu, name="menu"),
@@ -18,6 +21,7 @@ urlpatterns = [
     path("cart/remove/", cart_views.cart_remove, name="cart_remove"),
     path("cart/clear/", cart_views.cart_clear, name="cart_clear"),
     path("checkout/", views.checkout, name="checkout"),
+    path("order/<int:order_id>/cancel/", cancel_order, name="cancel_order"),
     path("order/<int:order_id>/", views.order_status, name="order_status"),
     path("favorites/", views.favorites, name="favorites"),
     path("profile/", views.profile, name="profile"),

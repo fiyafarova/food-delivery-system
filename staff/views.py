@@ -124,9 +124,11 @@ def change_status(request, order_id):
     elif new_status not in TRANSITIONS.get(order.status, []):
         messages.warning(request, _("This status change is not allowed."))
     else:
-        order.status = new_status
-        order.save(update_fields=["status"])
-        messages.success(request, _("Order status changed."))
+        changed = visible_orders(request.user).filter(pk=order.pk, status=order.status).update(status=new_status)
+        if changed:
+            messages.success(request, _("Order status changed."))
+        else:
+            messages.warning(request, _("The order changed. Refresh the page and try again."))
     return redirect("staff:order_detail", order_id=order_id)
 
 

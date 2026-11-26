@@ -49,6 +49,10 @@ class Customer(models.Model):
 
 
 class FoodOrder(models.Model):
+    payment_card = models.ForeignKey(
+        "accounts.SavedCard", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="orders",
+    )
     class Status(models.TextChoices):
         PLACED = "Placed"
         PREPARING = "Preparing"
@@ -74,6 +78,8 @@ class FoodOrder(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices,
                               default=Status.PLACED, db_default=Status.PLACED)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_default=0)
+    promo_code = models.CharField(max_length=32, blank=True, default="")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         db_table = "food_order"

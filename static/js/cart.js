@@ -64,6 +64,8 @@
                 : labels.addToCart;
         });
 
+        document.dispatchEvent(new CustomEvent("bb:cart-updated", {detail: data}));
+
         var root = document.getElementById("cart-root");
         if (!root) {
             return;
