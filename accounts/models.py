@@ -7,6 +7,7 @@ class User(AbstractUser):
         CUSTOMER = 'customer', 'Customer'
         OWNER = 'owner', 'Restaurant Owner'
         ADMIN = 'admin', 'Admin'
+        COURIER = 'courier', 'Courier'
 
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)

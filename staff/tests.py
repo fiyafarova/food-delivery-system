@@ -7,6 +7,7 @@ from core.models import Customer, FoodOrder, OrderItem
 from restaurants.models import FoodItem, Restaurant
 
 from .permissions import STAFF_GROUP
+from io import StringIO
 
 PASSWORD = "test-pass-123"
 
@@ -218,7 +219,7 @@ class StaffAccessTests(TestCase):
 class DemoUsersCommandTests(TestCase):
     def test_command_creates_staff_and_normal_user(self):
         from django.core.management import call_command
-        call_command("create_demo_users", "--password", PASSWORD, stdout=open("/dev/null", "w"))
+        call_command("create_demo_users", "--password", PASSWORD, stdout=StringIO())
         User = get_user_model()
         self.assertTrue(User.objects.get(username="staff_demo").groups.filter(name=STAFF_GROUP).exists())
         self.assertFalse(User.objects.get(username="customer_demo").groups.exists())
