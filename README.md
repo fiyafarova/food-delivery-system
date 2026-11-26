@@ -56,7 +56,9 @@ Run the tests: `python manage.py test`
 | http://127.0.0.1:8000/staff/team/ | register / remove employees | managers (owners), admins |
 | http://127.0.0.1:8000/staff/managers/ | register managers with a restaurant | admins |
 | http://127.0.0.1:8000/staff/password/ | change password | every logged-in user |
-| http://127.0.0.1:8000/staff/orders/ | orders, status change, menu availability | employee, owner, admin |
+| http://127.0.0.1:8000/staff/orders/ | orders, status change, menu availability, assign a courier (managers) | employee, owner, admin |
+| http://127.0.0.1:8000/staff/courier/ | my deliveries: "Picked up", "Delivered" | couriers |
+| http://127.0.0.1:8000/staff/couriers/ | register couriers | admins |
 | http://127.0.0.1:8000/admin/ | Django admin (users, roles, data) | admin only |
 | http://127.0.0.1:8000/api/ | REST API: accounts, restaurants (see below) | depends on the endpoint |
 | http://127.0.0.1:8000/core/ | JSON API: cart, orders, payments, delivery (`core/urls.py`) | see "Who sees which order" |
@@ -81,6 +83,21 @@ Run the tests: `python manage.py test`
 - Placing an order (`POST /core/orders/create/`) needs a logged-in customer.
 - Changing order status, payment status and delivery: only staff / owner / admin of the order's restaurant.
 
+## Couriers and delivery
+
+| Step | Who | Where | Result |
+|---|---|---|---|
+| 1. Assign a courier | manager (owner) or admin | staff order page → "Assign courier" | `delivery` row: courier, status **Assigned** |
+| 2. Cook | employee / manager | order status → **Preparing** | the courier's "Picked up" button appears |
+| 3. Pick up | the courier | `/staff/courier/` → "Picked up" | delivery **Picked Up**, `picked_up_at` |
+| 4. Deliver | the courier | `/staff/courier/` → "Delivered" | delivery **Delivered**, `delivered_at`, order **Delivered** |
+
+- A courier can be assigned to a *Placed* or *Preparing* order and changed until the pick-up.
+- A courier sees only their own deliveries; someone else's delivery → 404; restaurant pages → 403.
+- A cancelled order cannot be picked up or delivered (the courier sees "cancelled").
+- If staff set the order to *Delivered* themselves, the delivery is closed too.
+- The rules are in `core/delivery.py` (one place for the website and the API).
+
 ## Demo accounts
 
 Created by `python manage.py create_demo_users` (restaurants and orders by `python manage.py seed_demo`).
@@ -94,10 +111,12 @@ Created by `python manage.py create_demo_users` (restaurants and orders by `pyth
 | `staff_demo` | Employee of **Casa Pizza** | `/staff/login/` | orders and menu of Casa Pizza only: change status, dish availability; no "Team" / "Managers" |
 | `staff2_demo` | Employee of **Urban Burger + Dastarkhan** | `/staff/login/` | orders and menu of these two restaurants only |
 | `owner_demo` | Manager, owner of all 3 demo restaurants | `/staff/login/` | everything an employee can, for all 3 restaurants + "Team": register / remove employees |
-| `admin_demo` | Administrator (superuser) | `/staff/login/`, `/admin/` | all restaurants and orders + "Managers": register managers with a restaurant + Django admin |
+| `admin_demo` | Administrator (superuser) | `/staff/login/`, `/admin/` | all restaurants and orders + "Managers": register managers with a restaurant + "Couriers": register couriers + Django admin |
+| `courier_demo` | Courier Arman | `/staff/login/` | delivery of order #2 (Dastarkhan, Preparing): "Picked up" → "Delivered" |
+| `courier2_demo` | Courier Dana | `/staff/login/` | no deliveries at first: log in as `owner_demo`, open order #3 and assign Dana |
 
 New accounts you create during a demo (customer on `/register/`, employee on "Team", manager on
-"Managers") are not in this list: employees and managers must change their temporary password first.
+"Managers", courier on "Couriers") are not in this list: they must change their temporary password first.
 
 ## Users, roles and passwords
 
@@ -108,7 +127,8 @@ All users are stored in one table, `accounts_user` (custom model `accounts.User`
 | Customer | `role = "customer"` (default) + linked `Customer` | own orders only; `/staff/` → 403 |
 | Employee (restaurant staff) | group **"Restaurant staff"** + *Restaurant → staff* | `/staff/` pages of their restaurants |
 | Manager (restaurant owner) | `role = "owner"` | `/staff/` pages of own restaurants, "Team", restaurants and dishes via API |
-| Administrator | `role = "admin"` + superuser | everything, including "Managers" and `/admin/` |
+| Administrator | `role = "admin"` + superuser | everything, including "Managers", "Couriers" and `/admin/` |
+| Courier | group **"Courier"** | `/staff/courier/`: only deliveries assigned to them |
 
 - **Registration** — who registers whom:
 
@@ -117,9 +137,10 @@ All users are stored in one table, `accounts_user` (custom model `accounts.User`
   | Customer | themself | http://127.0.0.1:8000/register/ (or `POST /api/auth/register/`) |
   | Employee | a manager, for one of their restaurants | http://127.0.0.1:8000/staff/team/ |
   | Manager (restaurant owner) | an administrator, together with the restaurant | http://127.0.0.1:8000/staff/managers/ |
+  | Courier | an administrator | http://127.0.0.1:8000/staff/couriers/ |
 
   Nobody can choose their own role: extra fields like `role` or `is_superuser` in a sign-up are ignored.
-  Employees and managers get a **temporary password** and must change it at first login
+  Employees, managers and couriers get a **temporary password** and must change it at first login
   (staff pages open "Change password" until they do). Everyone can change the password at
   http://127.0.0.1:8000/staff/password/ (link in the profile and on the orders page).
 - **Passwords** are never stored as text: Django saves a salted **PBKDF2-SHA256** hash
@@ -152,7 +173,7 @@ Other endpoints: `/api/auth/token/refresh/`, `/api/auth/change-password/`, `/api
 | `accounts/`, `restaurants/` | Custom User, registration/JWT; Restaurant, Category, **FoodItem (the only dish table)**, search API | Sayazhan |
 | `database/` | SQL: schema, total trigger, `order_summary` view, PostgreSQL roles | Darya |
 | `customer/` | Client pages: menu, cart, checkout, order status | Dilnaz  |
-| `staff/` | Staff pages: orders, order details, menu availability | Sofiya  |
+| `staff/` | Staff pages: orders, order details, menu availability, accounts, couriers | Sofiya  |
 | `templates/` | `base.html` (shared layout and language switcher) + page templates | shared  |
 | `static/vendor/bootstrap/` | Bootstrap stored locally, so the demo works offline | shared  |
 | `locale/` | Translation files (English + Russian) | shared  |

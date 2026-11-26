@@ -110,7 +110,7 @@
           <a class="nav-link" href="{% url 'customer:menu' %}"{% if request.resolver_match.view_name == 'customer:menu' %} aria-current="page"{% endif %}>{% trans "Menu" %}</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'staff:orders' %}">{% trans "Staff" %}</a>
+          <a class="nav-link" href="{% url 'staff:home' %}">{% trans "Staff" %}</a>
         </li>
       </ul>
       <ul class="navbar-nav align-items-lg-center">

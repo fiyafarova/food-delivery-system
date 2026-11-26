@@ -762,3 +762,147 @@ msgstr "Самса"
 
 msgid "Black Tea"
 msgstr "Чёрный чай"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "A courier can be assigned only to a placed or preparing order."
+msgstr "Курьера можно назначить только на новый заказ или заказ, который готовится."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "The courier has already picked up this order."
+msgstr "Курьер уже забрал этот заказ."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "This delivery cannot be picked up now."
+msgstr "Этот заказ сейчас нельзя забрать."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "The restaurant has not started preparing this order yet."
+msgstr "Ресторан ещё не начал готовить этот заказ."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Pick the order up first."
+msgstr "Сначала заберите заказ."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Order picked up. Have a good ride!"
+msgstr "Заказ забран. Хорошей дороги!"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Order delivered."
+msgstr "Заказ доставлен."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Courier %(name)s assigned."
+msgstr "Курьер %(name)s назначен."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Courier %(name)s registered. Give them the temporary password; they will have to change it at first login."
+msgstr "Курьер %(name)s добавлен. Передайте ему временный пароль: при первом входе его нужно будет сменить."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Choose a courier."
+msgstr "Выберите курьера."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "My deliveries"
+msgstr "Мои доставки"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "To deliver"
+msgstr "Нужно доставить"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "On the way"
+msgstr "В пути"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Assigned"
+msgstr "Назначен"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "From"
+msgstr "Откуда"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "To"
+msgstr "Куда"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Picked up"
+msgstr "Забрал"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "The order was cancelled. Do not pick it up."
+msgstr "Заказ отменён. Забирать не нужно."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Waiting for the restaurant to start preparing."
+msgstr "Ждём, пока ресторан начнёт готовить."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "No deliveries right now."
+msgstr "Сейчас доставок нет."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Delivered at"
+msgstr "Доставлен в"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Nothing delivered yet."
+msgstr "Доставленных заказов пока нет."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Couriers"
+msgstr "Курьеры"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Courier"
+msgstr "Курьер"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Active deliveries"
+msgstr "Активные доставки"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "No couriers yet."
+msgstr "Курьеров пока нет."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Register a courier"
+msgstr "Добавить курьера"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "The courier logs in at the staff login page with this temporary password and must change it."
+msgstr "Курьер входит на странице входа для персонала с этим временным паролем и должен его сменить."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Register courier"
+msgstr "Добавить курьера"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Delivery status"
+msgstr "Статус доставки"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "picked up"
+msgstr "забран"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "delivered"
+msgstr "доставлен"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "No courier assigned yet."
+msgstr "Курьер пока не назначен."
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Assign courier"
+msgstr "Назначить курьера"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "Change courier"
+msgstr "Сменить курьера"
+
+#: courier (staff/courier_views.py, core/delivery.py, templates/staff)
+msgid "There are no couriers yet. An administrator registers them on the Couriers page."
+msgstr "Курьеров пока нет. Администратор добавляет их на странице «Курьеры»."

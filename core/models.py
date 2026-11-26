@@ -175,9 +175,19 @@ class Delivery(models.Model):
         related_name="delivery",
     )
     delivery_address = models.CharField(max_length=255)
-    courier_name = models.CharField(max_length=100, blank=True, null=True)
+    # the courier's account (group "Courier", see staff/permissions.py); set by a manager
+    courier = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,  # deleting a courier account keeps the delivery history
+        null=True,
+        blank=True,
+        db_column="courier_id",
+        related_name="deliveries",
+    )
+    courier_name = models.CharField(max_length=100, blank=True, null=True)  # copy of the name, kept for the API
     delivery_status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
+    picked_up_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

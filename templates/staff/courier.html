@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "My deliveries" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">{% trans "My deliveries" %}</h1>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'staff:password_change' %}">{% trans "Change password" %}</a>
+        <form method="post" action="{% url 'staff:logout' %}" class="m-0">
+            {% csrf_token %}
+            <button class="btn btn-outline-secondary" type="submit">{% trans "Log out" %} ({{ user.username }})</button>
+        </form>
+    </div>
+</div>
+
+<h2 class="h5">{% trans "To deliver" %}</h2>
+<div class="row g-3 mb-4">
+    {% for delivery in active %}
+    {% with order=delivery.order %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card h-100"><div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h3 class="h6 fw-bold mb-0">{% trans "Order" %} #{{ order.order_id }}</h3>
+                {% if order.status == "Cancelled" %}
+                <span class="badge text-bg-danger">{% trans "Cancelled" %}</span>
+                {% elif delivery.delivery_status == "Picked Up" %}
+                <span class="badge text-bg-primary">{% trans "On the way" %}</span>
+                {% else %}
+                <span class="badge text-bg-secondary">{% trans "Assigned" %}</span>
+                {% endif %}
+            </div>
+            <div><strong>{% trans "From" %}:</strong> {{ order.restaurant.name }}, {{ order.restaurant.address }}</div>
+            <div><strong>{% trans "To" %}:</strong> {{ delivery.delivery_address }}</div>
+            <div><strong>{% trans "Customer" %}:</strong> {{ order.customer.name }}, <a href="tel:{{ order.customer.phone }}">{{ order.customer.phone }}</a></div>
+            <div class="mb-3"><strong>{% trans "Total" %}:</strong> {{ order.total_amount }} ₸</div>
+
+            <div class="mt-auto">
+            {% if order.status == "Cancelled" %}
+                <p class="text-muted small mb-0">{% trans "The order was cancelled. Do not pick it up." %}</p>
+            {% elif delivery.delivery_status == "Assigned" %}
+                {% if order.status == "Preparing" %}
+                <form method="post" action="{% url 'staff:courier_picked_up' delivery.delivery_id %}" class="m-0">
+                    {% csrf_token %}
+                    <button class="btn btn-dark w-100" type="submit">{% trans "Picked up" %}</button>
+                </form>
+                {% else %}
+                <p class="text-muted small mb-0">{% trans "Waiting for the restaurant to start preparing." %}</p>
+                {% endif %}
+            {% else %}
+                <form method="post" action="{% url 'staff:courier_delivered' delivery.delivery_id %}" class="m-0">
+                    {% csrf_token %}
+                    <button class="btn btn-success w-100" type="submit">{% trans "Delivered" %}</button>
+                </form>
+            {% endif %}
+            </div>
+        </div></div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <p class="text-muted">{% trans "No deliveries right now." %}</p>
+    {% endfor %}
+</div>
+
+<h2 class="h5">{% trans "Delivered" %}</h2>
+{% if done %}
+<table class="table align-middle">
+    <thead><tr><th>#</th><th>{% trans "Restaurant" %}</th><th>{% trans "Address" %}</th><th>{% trans "Delivered at" %}</th></tr></thead>
+    <tbody>
+    {% for delivery in done %}
+    <tr>
+        <td>{{ delivery.order.order_id }}</td>
+        <td>{{ delivery.order.restaurant.name }}</td>
+        <td>{{ delivery.delivery_address }}</td>
+        <td>{{ delivery.delivered_at|date:"d.m.Y H:i" }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">{% trans "Nothing delivered yet." %}</p>
+{% endif %}
+{% endblock %}
