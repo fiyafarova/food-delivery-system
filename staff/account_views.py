@@ -4,6 +4,7 @@ Who registers whom:
 - customer  -> registers themself on the website (customer/views.py: register)
 - employee  -> registered by a manager (restaurant owner) on /staff/team/
 - manager   -> registered by an administrator on /staff/managers/ (together with a restaurant)
+- courier   -> registered by an administrator on /staff/couriers/ (staff/courier_views.py)
 
 Employees and managers get a temporary password; they must change it on first login.
 Passwords are never stored as text: set_password / create_user save a PBKDF2 hash.
@@ -32,6 +33,7 @@ from .permissions import (
     STAFF_GROUP,
     admin_required,
     is_admin,
+    is_courier,
     is_manager,
     is_restaurant_staff,
     manager_required,
@@ -60,6 +62,8 @@ class ChangePasswordView(PasswordChangeView):
         if next_url and url_has_allowed_host_and_scheme(
                 next_url, allowed_hosts={self.request.get_host()}, require_https=self.request.is_secure()):
             return next_url
+        if is_courier(self.request.user):
+            return reverse("staff:courier")
         if is_restaurant_staff(self.request.user):
             return reverse("staff:orders")
         return reverse("customer:profile")
@@ -202,4 +206,4 @@ def managers(request):
 
 def account_links(user):
     """Which account pages to show in the staff header."""
-    return {"show_team": is_manager(user), "show_managers": is_admin(user)}
+    return {"show_team": is_manager(user), "show_managers": is_admin(user), "show_couriers": is_admin(user)}

@@ -43,6 +43,36 @@
     </tfoot>
 </table>
 
+<h2 class="h5">{% trans "Delivery" %}</h2>
+<div class="mb-4">
+    {% if delivery and delivery.courier_name %}
+    <div><strong>{% trans "Courier" %}:</strong> {{ delivery.courier_name }}</div>
+    <div><strong>{% trans "Delivery status" %}:</strong> {{ delivery.delivery_status }}
+        {% if delivery.picked_up_at %}· {% trans "picked up" %} {{ delivery.picked_up_at|date:"H:i" }}{% endif %}
+        {% if delivery.delivered_at %}· {% trans "delivered" %} {{ delivery.delivered_at|date:"H:i" }}{% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted mb-2">{% trans "No courier assigned yet." %}</p>
+    {% endif %}
+
+    {% if may_assign %}
+    {% if couriers %}
+    <form method="post" action="{% url 'staff:assign_courier' order.id %}" class="d-flex flex-wrap gap-2 mt-2">
+        {% csrf_token %}
+        <label class="visually-hidden" for="id_courier">{% trans "Courier" %}</label>
+        <select class="form-select w-auto" name="courier" id="id_courier" required>
+            {% for courier in couriers %}
+            <option value="{{ courier.pk }}"{% if delivery.courier_id == courier.pk %} selected{% endif %}>{{ courier.get_full_name|default:courier.username }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-outline-dark" type="submit">{% if delivery.courier_id %}{% trans "Change courier" %}{% else %}{% trans "Assign courier" %}{% endif %}</button>
+    </form>
+    {% else %}
+    <p class="text-muted small">{% trans "There are no couriers yet. An administrator registers them on the Couriers page." %}</p>
+    {% endif %}
+    {% endif %}
+</div>
+
 <h2 class="h5">{% trans "Change status" %}</h2>
 {% if next_statuses %}
 <form method="post" action="{% url 'staff:change_status' order.id %}" class="d-flex flex-wrap gap-2">

@@ -8,6 +8,7 @@
         <a class="btn btn-outline-dark" href="{% url 'staff:menu' %}">{% trans "Menu availability" %}</a>
         {% if show_team %}<a class="btn btn-outline-dark" href="{% url 'staff:team' %}">{% trans "Team" %}</a>{% endif %}
         {% if show_managers %}<a class="btn btn-outline-dark" href="{% url 'staff:managers' %}">{% trans "Managers" %}</a>{% endif %}
+        {% if show_couriers %}<a class="btn btn-outline-dark" href="{% url 'staff:couriers' %}">{% trans "Couriers" %}</a>{% endif %}
         <a class="btn btn-outline-secondary" href="{% url 'staff:password_change' %}">{% trans "Change password" %}</a>
         <form method="post" action="{% url 'staff:logout' %}" class="m-0">
             {% csrf_token %}
