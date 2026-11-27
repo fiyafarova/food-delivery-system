@@ -12,9 +12,7 @@ The rules of every step are in core/delivery.py.
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.contrib.auth.views import LoginView
-from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -25,7 +23,7 @@ from core.delivery import DeliveryError, mark_delivered, mark_picked_up
 from core.models import Delivery
 
 from .account_views import NewAccountForm
-from .permissions import COURIER_GROUP, admin_required, courier_required, is_courier
+from .permissions import admin_required, courier_required, is_courier
 
 User = get_user_model()
 
@@ -51,7 +49,7 @@ def home(request):
 
 
 def couriers_queryset():
-    return User.objects.filter(groups__name=COURIER_GROUP, is_active=True).order_by("username")
+    return User.objects.filter(role=User.Role.COURIER, is_active=True).order_by("username")
 
 
 @courier_required
@@ -93,16 +91,15 @@ def couriers(request):
     """Admin's page: couriers + register a new courier."""
     form = NewAccountForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            courier = form.create_user(role="customer", created_by=request.user)
-            courier.groups.add(Group.objects.get(name=COURIER_GROUP))
+        courier = form.create_user(role=User.Role.COURIER, created_by=request.user)
         messages.success(request, _("Courier %(name)s registered. Give them the temporary password; "
                                     "they will have to change it at first login.") % {"name": courier.username})
         return redirect("staff:couriers")
 
     people = couriers_queryset().annotate(
-        active_count=Count("deliveries", filter=Q(deliveries__delivery_status__in=ACTIVE)),
-        done_count=Count("deliveries", filter=Q(deliveries__delivery_status=Delivery.Status.DELIVERED)),
+        active_count=Count("courier_deliveries", filter=Q(courier_deliveries__delivery_status__in=ACTIVE)),
+        done_count=Count("courier_deliveries",
+                         filter=Q(courier_deliveries__delivery_status=Delivery.Status.DELIVERED)),
     )
     return render(request, "staff/couriers.html", {"form": form, "couriers": people})
 

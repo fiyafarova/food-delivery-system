@@ -5,6 +5,7 @@ from .models import Promo
 from django.utils import timezone
 from decimal import Decimal
 from .statuses import TRANSITIONS, STATUSES
+from . import delivery as delivery_rules
 
 from django.contrib.auth import get_user_model
 from staff.permissions import is_manager, restaurants_for
@@ -470,6 +471,10 @@ def update_order_status(request, order_id):
             payment.payment_status = "Refunded"
             payment.save(update_fields=["payment_status"])
 
+        delivery = Delivery.objects.filter(order=order).first()
+        if new_status == "Delivered" and delivery is not None:
+            delivery_rules.finish(delivery)  # same as the staff website: close the delivery too
+
 
     return JsonResponse({
         "message": "Order status updated successfully.",
@@ -683,22 +688,12 @@ def assign_courier(request, delivery_id):
             status=400
         )
 
-    if delivery.delivery_status == "Delivered":
-        return JsonResponse(
-            {"error": "Delivered order cannot be reassigned."},
-            status=400
-        )
-
-    delivery.courier = courier
-    delivery.courier_name = (
-        courier.get_full_name() or courier.get_username()
-    )
-    delivery.delivery_status = "Assigned"
-    delivery.save(update_fields=[
-        "courier",
-        "courier_name",
-        "delivery_status"
-    ])
+    # same rules as the staff website (core/delivery.py):
+    # only Placed/Preparing orders, the courier can be changed until pick-up
+    try:
+        delivery = delivery_rules.assign_courier(delivery.order, courier)
+    except delivery_rules.DeliveryError as error:
+        return JsonResponse({"error": str(error)}, status=400)
 
     return JsonResponse({
         "message": "Courier assigned successfully.",
@@ -772,34 +767,30 @@ def update_delivery_status(request, delivery_id):
             status=400
         )
 
-    allowed_transitions = {
-        "Pending": ["Assigned"],
-        "Assigned": ["Picked Up"],
-        "Picked Up": ["Delivered"],
-        "Delivered": []
+    # same rules as the courier page (core/delivery.py):
+    # Assigned -> Picked Up (only while the order is Preparing) -> Delivered (closes the order);
+    # a courier is assigned with POST /core/deliveries/<id>/assign/
+    steps = {
+        "Picked Up": delivery_rules.mark_picked_up,
+        "Delivered": delivery_rules.mark_delivered,
     }
-
-    allowed = allowed_transitions.get(delivery.delivery_status, [])
-
-    if new_status not in allowed:
+    if new_status not in steps:
         return JsonResponse(
             {
                 "error": "This delivery status transition is not allowed.",
                 "current_status": delivery.delivery_status,
-                "allowed_statuses": allowed
+                "allowed_statuses": list(steps),
             },
             status=400
         )
 
-    with transaction.atomic():
-        delivery.delivery_status = new_status
-
-        if new_status == "Delivered":
-            delivery.delivered_at = timezone.now()
-            delivery.order.status = "Delivered"
-            delivery.order.save(update_fields=["status"])
-
-        delivery.save()
+    try:
+        steps[new_status](delivery)
+    except delivery_rules.DeliveryError as error:
+        return JsonResponse(
+            {"error": str(error), "current_status": delivery.delivery_status},
+            status=400
+        )
 
     return JsonResponse({
         "message": "Delivery status updated.",
@@ -828,6 +819,10 @@ def delivery_details(request, order_id):
         "courier_name": delivery.courier_name,
         "delivery_status": delivery.delivery_status,
         "created_at": delivery.created_at.isoformat(),
+        "picked_up_at": (
+            delivery.picked_up_at.isoformat()
+            if delivery.picked_up_at else None
+        ),
         "delivered_at": (
             delivery.delivered_at.isoformat()
             if delivery.delivered_at else None
@@ -881,6 +876,10 @@ def my_deliveries(request):
             "delivery_address": delivery.delivery_address,
             "delivery_status": delivery.delivery_status,
             "created_at": delivery.created_at.isoformat(),
+            "picked_up_at": (
+                delivery.picked_up_at.isoformat()
+                if delivery.picked_up_at else None
+            ),
             "delivered_at": (
                 delivery.delivered_at.isoformat()
                 if delivery.delivered_at else None

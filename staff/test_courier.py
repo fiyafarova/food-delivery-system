@@ -2,7 +2,6 @@
 
 from io import StringIO
 
-from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -10,14 +9,11 @@ from django.urls import reverse
 from core.models import Delivery, FoodOrder
 from staff.models import TemporaryPassword
 
-from .permissions import COURIER_GROUP
 from .tests import PASSWORD, make_test_data, make_user
 
 
 def make_courier(username, **extra):
-    courier = make_user(username, **extra)
-    courier.groups.add(Group.objects.get(name=COURIER_GROUP))
-    return courier
+    return make_user(username, role="courier", **extra)
 
 
 def status_of(order_id):
@@ -166,7 +162,7 @@ class CourierAccessTests(TestCase):
         self.assertRedirects(response, reverse("staff:couriers"))
         from django.contrib.auth import get_user_model
         courier = get_user_model().objects.get(username="newcourier")
-        self.assertTrue(courier.groups.filter(name=COURIER_GROUP).exists())
+        self.assertEqual(courier.role, "courier")
         self.assertTrue(TemporaryPassword.objects.filter(user=courier).exists())
         self.assertNotIn("Courier-temp-2026", courier.password)  # stored as a hash
 
@@ -193,3 +189,59 @@ class DemoCourierTests(TestCase):
         self.assertFalse(Delivery.objects.filter(courier__username="courier2_demo").exists())
         call_command("create_demo_users", stdout=StringIO())  # running again keeps one delivery
         self.assertEqual(Delivery.objects.filter(courier__username="courier_demo").count(), 1)
+
+
+class CourierApiTests(TestCase):
+    """The JSON API (core/views.py) follows the same delivery rules as the courier pages."""
+
+    def setUp(self):
+        make_test_data()
+        self.courier = make_courier("arman")
+        from django.contrib.auth import get_user_model
+        self.owner = get_user_model().objects.get(username="owner0")
+
+    def post(self, user, url, data):
+        self.client.force_login(user)
+        return self.client.post(url, data, content_type="application/json")
+
+    def api_assign(self, order_id):
+        delivery = Delivery.objects.create(order_id=order_id, delivery_address="Almaty")
+        response = self.post(self.owner, reverse("assign_courier", args=[delivery.pk]),
+                             {"courier_id": self.courier.pk})
+        return response, delivery
+
+    def set_status(self, delivery, status):
+        return self.post(self.courier, reverse("update_delivery_status", args=[delivery.pk]),
+                         {"delivery_status": status})
+
+    def test_api_full_path(self):
+        response, delivery = self.api_assign(102)  # Preparing
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.set_status(delivery, "Picked Up").status_code, 200)
+        self.assertEqual(self.set_status(delivery, "Delivered").status_code, 200)
+        delivery.refresh_from_db()
+        self.assertIsNotNone(delivery.picked_up_at)
+        self.assertEqual(status_of(102), "Delivered")
+
+    def test_api_cannot_pick_up_before_preparing(self):
+        _response, delivery = self.api_assign(101)  # Placed
+        self.assertEqual(self.set_status(delivery, "Picked Up").status_code, 400)
+
+    def test_api_cannot_deliver_without_pick_up(self):
+        _response, delivery = self.api_assign(102)
+        self.assertEqual(self.set_status(delivery, "Delivered").status_code, 400)
+        self.assertEqual(status_of(102), "Preparing")
+
+    def test_api_cannot_assign_to_final_order(self):
+        response, delivery = self.api_assign(103)  # Delivered
+        self.assertEqual(response.status_code, 400)
+        delivery.refresh_from_db()
+        self.assertIsNone(delivery.courier)
+
+    def test_api_my_deliveries_shows_picked_up_time(self):
+        _response, delivery = self.api_assign(102)
+        self.set_status(delivery, "Picked Up")
+        self.client.force_login(self.courier)
+        data = self.client.get(reverse("my_deliveries")).json()["deliveries"]
+        self.assertEqual([d["order_id"] for d in data], [102])
+        self.assertIsNotNone(data[0]["picked_up_at"])

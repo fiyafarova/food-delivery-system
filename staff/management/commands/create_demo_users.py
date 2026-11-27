@@ -28,7 +28,7 @@ from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand, CommandError
 
 from restaurants.models import Restaurant
-from staff.permissions import COURIER_GROUP, STAFF_GROUP
+from staff.permissions import STAFF_GROUP
 
 DEMO_PASSWORD = "BiteBox-demo-2026"
 
@@ -40,8 +40,8 @@ DEMO_USERS = [
     ("staff2_demo",    "customer", STAFF_GROUP,   False),
     ("owner_demo",     "owner",    None,          False),
     ("admin_demo",     "admin",    None,          True),
-    ("courier_demo",   "customer", COURIER_GROUP, False),
-    ("courier2_demo",  "customer", COURIER_GROUP, False),
+    ("courier_demo",   "courier",  None,          False),
+    ("courier2_demo",  "courier",  None,          False),
 ]
 
 DEMO_NAMES = {"courier_demo": ("Arman", "Courier"), "courier2_demo": ("Dana", "Courier")}
@@ -100,7 +100,7 @@ class Command(BaseCommand):
             raise CommandError("Demo users are only for local development (DEBUG is off).")
 
         User = get_user_model()
-        groups = {name: Group.objects.get_or_create(name=name)[0] for name in (STAFF_GROUP, COURIER_GROUP)}
+        staff_group, _ = Group.objects.get_or_create(name=STAFF_GROUP)
 
         for username, role, group_name, superuser in DEMO_USERS:
             user, created = User.objects.get_or_create(
@@ -111,13 +111,11 @@ class Command(BaseCommand):
             user.first_name, user.last_name = DEMO_NAMES.get(username, (user.first_name, user.last_name))
             user.set_password(options["password"])  # stored as a PBKDF2 hash, never as plain text
             user.save()
-            for name, group in groups.items():
-                if name == group_name:
-                    user.groups.add(group)
-                else:
-                    user.groups.remove(group)
             if group_name == STAFF_GROUP:
+                user.groups.add(staff_group)
                 link_demo_staff(user)
+            else:
+                user.groups.remove(staff_group)
             link_demo_customer(user)
             link_demo_courier(user)
             action = "created" if created else "updated"

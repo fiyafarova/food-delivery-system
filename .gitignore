@@ -24,3 +24,5 @@ db.sqlite3
 # Local demo credentials (never commit)
 DEMO_ACCOUNTS.local.md
 .claude/
+.env.*
+!.env.example

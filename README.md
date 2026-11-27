@@ -97,6 +97,9 @@ Run the tests: `python manage.py test`
 - A cancelled order cannot be picked up or delivered (the courier sees "cancelled").
 - If staff set the order to *Delivered* themselves, the delivery is closed too.
 - The rules are in `core/delivery.py` (one place for the website and the API).
+- API (Aksunkar): `POST /core/orders/<id>/delivery/` (create), `POST /core/deliveries/<id>/assign/`
+  `{"courier_id": ...}` (manager), `POST /core/deliveries/<id>/status/` `{"delivery_status": "Picked Up" | "Delivered"}`
+  (the courier or a manager), `GET /core/deliveries/mine/` (courier).
 
 ## Demo accounts
 
@@ -128,7 +131,7 @@ All users are stored in one table, `accounts_user` (custom model `accounts.User`
 | Employee (restaurant staff) | group **"Restaurant staff"** + *Restaurant → staff* | `/staff/` pages of their restaurants |
 | Manager (restaurant owner) | `role = "owner"` | `/staff/` pages of own restaurants, "Team", restaurants and dishes via API |
 | Administrator | `role = "admin"` + superuser | everything, including "Managers", "Couriers" and `/admin/` |
-| Courier | group **"Courier"** | `/staff/courier/`: only deliveries assigned to them |
+| Courier | `role = "courier"` | `/staff/courier/`: only deliveries assigned to them |
 
 - **Registration** — who registers whom:
 
